@@ -1,0 +1,13 @@
+{
+  "type": "pet-doctor.registry",
+  "version": 1,
+  "owners": [
+    {"id": "owner-demo-1", "name": "Ana Ejemplo", "contact": ""},
+    {"id": "owner-demo-2", "name": "Luis Ejemplo", "contact": ""}
+  ],
+  "pets": [
+    {"id": "pet-demo-1", "ownerId": "owner-demo-1", "name": "Luna", "weightKg": 12.5, "coat": "long"},
+    {"id": "pet-demo-2", "ownerId": "owner-demo-1", "name": "Toby", "size": "small", "coat": "short"},
+    {"id": "pet-demo-3", "ownerId": "owner-demo-2", "name": "Max", "weightKg": 30}
+  ]
+}

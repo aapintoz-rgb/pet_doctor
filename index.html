@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#174f48">
+  <title>Pet Doctor · Acceso</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script defer src="assets/auth.js"></script>
+  <script defer src="assets/app.js"></script>
+  <link rel="stylesheet" href="assets/quote.css">
+  <link rel="stylesheet" href="assets/quote-additions.css">
+  <script defer src="assets/catalog.js"></script>
+  <script defer src="assets/pricing.js"></script>
+  <script defer src="assets/files.js"></script>
+  <script defer src="assets/vendor/pdf-lib.min.js"></script>
+  <script defer src="assets/pdf.js"></script>
+  <script defer src="assets/quote.js"></script>
+</head>
+<body>
+  <main id="login-view" class="login-layout">
+    <section class="brand-panel" aria-label="Pet Doctor">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">✚</span> pet doctor<span class="brand-dot">.</span></a>
+      <div class="brand-content">
+        <span class="eyebrow">CUIDADO QUE CONECTA</span>
+        <h1>Más tiempo para<br>cuidar de ellos.</h1>
+        <p>Un espacio para organizar los servicios y acompañar cada etapa del cuidado de tus pacientes.</p>
+        <div class="pet-illustration" aria-hidden="true"><span class="pet-ear left"></span><span class="pet-ear right"></span><div class="pet-face"><i class="eye left"></i><i class="eye right"></i><span class="nose"></span><span class="muzzle">ω</span></div><span class="pet-cross">+</span></div>
+      </div>
+      <span class="brand-footer">PET DOCTOR / GESTIÓN DE SERVICIOS</span>
+    </section>
+    <section class="form-panel">
+      <span class="edition">VERSIÓN ACADÉMICA <span>01</span></span>
+      <div class="login-card">
+        <span class="section-tag">BIENVENIDO DE NUEVO</span>
+        <h2>Ingresa a tu espacio</h2>
+        <p class="muted">Introduce tus credenciales para continuar.</p>
+        <form id="login-form">
+          <label for="username">Usuario</label>
+          <input id="username" name="username" type="text" autocomplete="username" placeholder="Tu nombre de usuario" required maxlength="80" autocapitalize="none" spellcheck="false">
+          <div class="password-label"><label for="password">Contraseña</label><button id="toggle-password" type="button" aria-controls="password" aria-pressed="false">Mostrar</button></div>
+          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required maxlength="128">
+          <p id="login-error" class="error" role="alert" hidden></p>
+          <button class="primary-button" type="submit">Ingresar <span aria-hidden="true">→</span></button>
+        </form>
+        <div class="demo-note"><span class="demo-icon" aria-hidden="true">i</span><p>Acceso de demostración<br><strong>admin</strong><span class="separator">/</span><strong>PetDoctor123</strong></p></div>
+      </div>
+      <footer class="form-footer">Organiza. Conecta. Cuida.<span>Pet Doctor © <span id="year"></span></span></footer>
+    </section>
+  </main>
+  <div id="home-view" class="home-layout" hidden>
+    <header class="home-header"><a class="brand" href="./"><span class="brand-mark" aria-hidden="true">✚</span> pet doctor.</a><span class="header-location">Cotizar servicios</span><div class="session-controls"><span id="session-user"></span><button id="logout-button" class="secondary-button" type="button">Cerrar sesión</button></div></header>
+    <main class="home-content" tabindex="-1" id="home-content">
+      <span class="section-tag">TU ESPACIO DE TRABAJO</span><h1>Todo empieza con un buen cuidado.</h1><p class="muted">Sesión iniciada. Esta es la base para los próximos módulos de Pet Doctor.</p>
+      <div class="module-grid">
+        <article><span class="module-number">01</span><h2>Programación de servicios</h2><p>Cinco tipos de servicio, un solo lugar para organizarlos.</p><span class="status">Pendiente de desarrollo</span></article>
+        <article><span class="module-number">02</span><h2>Dueños y mascotas</h2><p>Registro de clientes, mascotas e importación de archivos CSV.</p><span class="status">Pendiente de desarrollo</span></article>
+        <article><span class="module-number">03</span><h2>Consulta de atenciones</h2><p>Consulta del historial y exportación de información.</p><span class="status">Pendiente de desarrollo</span></article>
+        <article><span class="module-number">04</span><h2>Ficha de cliente y mascota</h2><p>Información relacionada y acciones conectadas a n8n.</p><span class="status">Pendiente de desarrollo</span></article>
+      </div>
+      <p class="academic-note">Prototipo académico · El acceso se valida en el navegador.</p>
+    </main>
+  </div>
+</body>
+</html>

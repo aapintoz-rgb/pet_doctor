@@ -1,0 +1,35 @@
+{
+  "tool": "image_gen.imagegen (built-in)",
+  "assets": [
+    {
+      "id": "consulta",
+      "path": "C:\\Users\\Alber\\.codex\\generated_images\\01a18a93-5cb3-7ef1-9474-110462e739a3\\exec-7ee27c87-4cc1-4ed1-b377-1049b8104d68.png",
+      "prompt": "Use case: illustration-story. Asset type: square illustration for Pet Doctor veterinary service quotation web app. Subject: a friendly cream-colored dog calmly receiving a checkup from a warm veterinarian with a stethoscope. Style: polished friendly editorial flat illustration, soft rounded shapes, subtle paper grain, simple expressive faces, restrained dark forest-green outlines. Palette: deep forest green #174f48, cream #f6f7f2, sage green and soft coral. Solid pale cream background. Centered complete scene with generous 12% padding, consistent scale suitable for 100px thumbnail and 300px banner. No text, letters, logo, watermark, photorealism, gradients or medical distress. One cohesive scene only."
+    },
+    {
+      "id": "vacunas",
+      "path": "C:\\Users\\Alber\\.codex\\generated_images\\01a18a93-5cb3-7ef1-9474-110462e739a3\\exec-e66cb584-32aa-483e-bc16-d3f1e37bb5bd.png",
+      "prompt": "Use case: illustration-story. Asset type: square illustration for Pet Doctor veterinary service quotation web app. Subject: a friendly cream-colored dog sitting beside a vaccination record booklet with simple abstract marks and a small medical bag. Style: polished friendly editorial flat illustration, soft rounded shapes, subtle paper grain, simple expressive faces, restrained dark forest-green outlines. Palette: deep forest green #174f48, cream #f6f7f2, sage green and soft coral. Solid pale cream background. Centered complete scene with generous 12% padding, consistent scale suitable for 100px thumbnail and 300px banner. No text, letters, logo, watermark, photorealism, gradients or medical distress. One cohesive scene only."
+    },
+    {
+      "id": "desparasitacion",
+      "path": "C:\\Users\\Alber\\.codex\\generated_images\\01a18a93-5cb3-7ef1-9474-110462e739a3\\exec-b58e6443-a9d4-47b6-8642-521ecceec883.png",
+      "prompt": "Use case: illustration-story. Asset type: square illustration for Pet Doctor veterinary service quotation web app. Subject: a friendly cream-colored dog sitting next to a large protective green shield with a simple checkmark. Style: polished friendly editorial flat illustration, soft rounded shapes, subtle paper grain, simple expressive faces, restrained dark forest-green outlines. Palette: deep forest green #174f48, cream #f6f7f2, sage green and soft coral. Solid pale cream background. Centered complete scene with generous 12% padding, consistent scale suitable for 100px thumbnail and 300px banner. No text, letters, logo, watermark, photorealism, gradients or medical distress. One cohesive scene only."
+    },
+    {
+      "id": "grooming",
+      "path": "C:\\Users\\Alber\\.codex\\generated_images\\01a18a93-5cb3-7ef1-9474-110462e739a3\\exec-40655ab1-3336-4c22-94fa-8504d3d1e0a1.png",
+      "prompt": "Use case: illustration-story. Asset type: square illustration for Pet Doctor veterinary service quotation web app. Subject: a friendly cream-colored dog enjoying a bubble bath in a rounded coral tub, small towel. Style: polished friendly editorial flat illustration, soft rounded shapes, subtle paper grain, simple expressive faces, restrained dark forest-green outlines. Palette: deep forest green #174f48, cream #f6f7f2, sage green and soft coral. Solid pale cream background. Centered complete scene with generous 12% padding, consistent scale suitable for 100px thumbnail and 300px banner. No text, letters, logo, watermark, photorealism, gradients or medical distress. One cohesive scene only."
+    },
+    {
+      "id": "guarderia",
+      "path": "C:\\Users\\Alber\\.codex\\generated_images\\01a18a93-5cb3-7ef1-9474-110462e739a3\\exec-99e1c100-35ff-467b-9e4a-dd23fba6db20.png",
+      "prompt": "Use case: illustration-story. Asset type: square illustration for Pet Doctor veterinary service quotation web app. Subject: two friendly dogs playing with a ball in a small safe garden. Style: polished friendly editorial flat illustration, soft rounded shapes, subtle paper grain, simple expressive faces, restrained dark forest-green outlines. Palette: deep forest green #174f48, cream #f6f7f2, sage green and soft coral. Solid pale cream background. Centered complete scene with generous 12% padding, consistent scale suitable for 100px thumbnail and 300px banner. No text, letters, logo, watermark, photorealism, gradients or medical distress. One cohesive scene only."
+    },
+    {
+      "id": "inteligencia",
+      "path": "C:\\Users\\Alber\\.codex\\generated_images\\01a18a93-5cb3-7ef1-9474-110462e739a3\\exec-defd564b-2aaa-401f-bc70-3f6daebf1c88.png",
+      "prompt": "Use case: illustration-story. Asset type: square illustration for Pet Doctor veterinary service quotation web app. Subject: a friendly cream-colored dog using its paw to solve a wooden puzzle toy with colored shapes. Style: polished friendly editorial flat illustration, soft rounded shapes, subtle paper grain, simple expressive faces, restrained dark forest-green outlines. Palette: deep forest green #174f48, cream #f6f7f2, sage green and soft coral. Solid pale cream background. Centered complete scene with generous 12% padding, consistent scale suitable for 100px thumbnail and 300px banner. No text, letters, logo, watermark, photorealism, gradients or medical distress. One cohesive scene only."
+    }
+  ]
+}
