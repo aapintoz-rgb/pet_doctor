@@ -6,7 +6,7 @@ Aplicación web académica para servicios de perros, en HTML, CSS y JavaScript. 
 
 Abre `index.html` o sirve la carpeta con un servidor HTTP estático. Acceso académico: **admin / PetDoctor123**. Este login en el navegador no protege datos y no es autenticación de producción.
 
-Sitio de GitHub Pages: https://aapintoz-rgb.github.io/pet_doctor/. Esta entrega prepara la actualización con Clientes, Cotización y la conexión única de n8n.
+Sitio de GitHub Pages: https://aapintoz-rgb.github.io/pet_doctor/. Publicación actualizada con Clientes, Cotización y la conexión única de n8n.
 
 ## Navegación y ficha cliente
 
