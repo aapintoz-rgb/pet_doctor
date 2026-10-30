@@ -2,6 +2,8 @@
 
 Aplicación web académica para gestión de servicios de mascotas. HTML, CSS y JavaScript sin compilación ni dependencias de ejecución. Las fuentes externas son opcionales; sin conexión se usan las fuentes del sistema.
 
+Sitio publicado: https://aapintoz-rgb.github.io/pet_doctor/
+
 ## Abrir
 
 Abre `index.html` en un navegador. También puede servirse el directorio con cualquier servidor HTTP estático o GitHub Pages.

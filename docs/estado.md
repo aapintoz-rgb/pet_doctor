@@ -48,8 +48,9 @@ Definir si el siguiente módulo será el registro formal de dueños y mascotas o
 
 - Comprobación de sintaxis JavaScript aprobada con Node.
 - Comprobaciones con DOM simulado aprobadas: credenciales correctas e incorrectas, mostrar/ocultar contraseña, restauración y cierre de sesión, sesión corrupta y almacenamiento bloqueado. También se comprobaron las referencias HTML a scripts y estilos.
-- Revisión visual en navegador pendiente: el visor bloqueó el protocolo de archivo local. No se verificó visualmente la presentación.
-- Archivos guardados localmente. Sin sincronización remota: GitHub respondió 403 «Resource not accessible by integration» al intentar crear README.md. No se creó ningún archivo remoto.
+- Revisión visual aprobada en navegador mediante servidor local y en la publicación de GitHub Pages.
+- Código sincronizado en la rama `main` de https://github.com/aapintoz-rgb/pet_doctor.
+- GitHub Pages habilitado desde la raíz de `main`: https://aapintoz-rgb.github.io/pet_doctor/.
 - Dieciséis pruebas automatizadas aprobadas para tarifas, límites de peso, descuentos, IGV, archivos y base maestra.
 - Comprobación en navegador aprobada para cálculo, persistencia de la base al recargar y descarga PDF.
 - PDF verificado con pdfinfo, extracción de texto y renderizado de todas sus páginas a PNG; sin contenido recortado ni superpuesto.
