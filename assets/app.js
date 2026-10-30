@@ -27,8 +27,9 @@
     document.querySelector('#login-view').hidden = Boolean(session);
     document.querySelector('#home-view').hidden = !session;
     document.querySelector('#session-user').textContent = session ? session.displayName : '';
-    document.title = session ? 'Pet Doctor · Inicio' : 'Pet Doctor · Acceso';
-    if (moveFocus) document.querySelector(session ? '#home-content' : '#username').focus();
+    document.title = session ? 'Pet Doctor · Clientes' : 'Pet Doctor · Acceso';
+    if(window.PetDoctorApplication)window.PetDoctorApplication.sessionChanged(session,moveFocus);
+    else if(moveFocus && !session)username.focus();
   }
 
   form.addEventListener('submit', function (event) {

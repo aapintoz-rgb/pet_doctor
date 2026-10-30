@@ -1,0 +1,10 @@
+{
+  "type": "pet-doctor.workspace",
+  "version": 2,
+  "currency": "PEN",
+  "updatedAt": null,
+  "owners": [],
+  "pets": [],
+  "quotes": [],
+  "attentions": []
+}

@@ -87,7 +87,7 @@
     return { owners, pets };
   }
   function emptyQuotesMaster() {
-    return { type: 'pet-doctor.quotes-master', version: 1, currency: C.currency, updatedAt: null, quotes: [] };
+    return { type: 'pet-doctor.quotes-master', version: 1, currency: C.currency, updatedAt: null, quotes: [], attentions: [] };
   }
   function readQuotesMaster(source) {
     const file = parseJSON(source);
@@ -100,7 +100,15 @@
       ids.add(validated.id);
       return quote;
     });
-    return { type: file.type, version: file.version, currency: file.currency, updatedAt: typeof file.updatedAt === 'string' ? file.updatedAt : null, quotes };
+    const attentions = file.attentions === undefined ? [] : file.attentions;
+    if (!Array.isArray(attentions) || attentions.length > 10000) fail('La base admite hasta 10 000 atenciones.');
+    const attentionIds = new Set();
+    attentions.forEach(attention => {
+      readAttention(attention);
+      if (attentionIds.has(attention.id)) fail('La base contiene identificadores de atención duplicados.');
+      attentionIds.add(attention.id);
+    });
+    return { type: file.type, version: file.version, currency: file.currency, updatedAt: typeof file.updatedAt === 'string' ? file.updatedAt : null, quotes, attentions };
   }
   function upsertQuote(master, quote) {
     const cleanMaster = readQuotesMaster(JSON.stringify(master));
@@ -111,7 +119,44 @@
     cleanMaster.updatedAt = new Date().toISOString();
     return cleanMaster;
   }
-  const api = { validateState, readQuote, makeQuote, readRegistry, emptyQuotesMaster, readQuotesMaster, upsertQuote };
+  function readAttention(attention) {
+    if (!obj(attention) || attention.type !== 'pet-doctor.attention' || attention.version !== 1 || attention.status !== 'realizada') fail('Atención inválida: se requiere estado realizada.');
+    if (typeof attention.id !== 'string' || !attention.id.trim() || attention.id.length > 100) fail('Identificador de atención inválido.');
+    if (typeof attention.performedAt !== 'string' || !Number.isFinite(Date.parse(attention.performedAt))) fail('Fecha de atención inválida.');
+    const quote = readQuote(JSON.stringify(attention.quote));
+    if (quote.id !== attention.id || !pricing.calculate(quote.state).complete) fail('La atención debe contener servicios completos y el mismo identificador.');
+    return attention;
+  }
+  function registeredPet(state, registry) {
+    const owner = registry?.owners?.find(item => item.id === state.pet.ownerId);
+    const pet = registry?.pets?.find(item => item.id === state.pet.petId && item.ownerId === owner?.id);
+    const phone = owner?.contact?.replace(/\D/g, '') || '';
+    if (!owner?.name?.trim() || !/^\d{8}$/.test(owner.dni) || !/^[+\d\s().-]+$/.test(owner.contact) || phone.length < 7 || phone.length > 15 || !pet?.name?.trim()) fail('Selecciona o registra un cliente completo y su perrito.');
+    return { owner, pet };
+  }
+  function makeAttention(state, meta, performedAt = new Date().toISOString(), registry) {
+    const selected = registeredPet(state, registry), clean = validateState(state);
+    clean.pet.name = selected.pet.name; clean.pet.ownerName = selected.owner.name; clean.pet.contact = selected.owner.contact;
+    return readAttention({ type: 'pet-doctor.attention', version: 1, id: meta.id, status: 'realizada', performedAt, quote: makeQuote(clean, meta) });
+  }
+  function upsertAttention(master, attention, registry) {
+    const cleanMaster = readQuotesMaster(JSON.stringify(master));
+    readAttention(attention);
+    registeredPet(attention.quote.state, registry);
+    const index = cleanMaster.attentions.findIndex(item => item.id === attention.id);
+    if (index >= 0) {
+      const previous = cleanMaster.attentions[index];
+      if (previous.quote.state.pet.ownerId !== attention.quote.state.pet.ownerId || previous.quote.state.pet.petId !== attention.quote.state.pet.petId) fail('Usa «Nueva» para cambiar el cliente o perrito de una atención.');
+      cleanMaster.attentions[index] = { ...attention, performedAt: previous.performedAt };
+    }
+    else {
+      if (cleanMaster.attentions.length >= 10000) fail('La base admite hasta 10 000 atenciones.');
+      cleanMaster.attentions.push(attention);
+    }
+    cleanMaster.updatedAt = new Date().toISOString();
+    return cleanMaster;
+  }
+  const api = { makeAttention, readAttention, upsertAttention, validateState, readQuote, makeQuote, readRegistry, emptyQuotesMaster, readQuotesMaster, upsertQuote };
   g.PetDoctorFiles = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(globalThis);

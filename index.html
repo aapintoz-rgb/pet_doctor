@@ -10,12 +10,22 @@
   <script defer src="assets/app.js"></script>
   <link rel="stylesheet" href="assets/quote.css">
   <link rel="stylesheet" href="assets/quote-additions.css">
+  <link rel="stylesheet" href="assets/clients.css">
+  <link rel="stylesheet" href="assets/history.css">
+  <link rel="stylesheet" href="assets/application.css">
   <script defer src="assets/catalog.js"></script>
   <script defer src="assets/pricing.js"></script>
   <script defer src="assets/files.js"></script>
+  <script defer src="assets/workspace.js"></script>
+  <script defer src="assets/integration.js"></script>
+  <script defer src="assets/clients.js"></script>
+  <script defer src="assets/history.js"></script>
+  <script defer src="assets/history-view.js"></script>
   <script defer src="assets/vendor/pdf-lib.min.js"></script>
   <script defer src="assets/pdf.js"></script>
+  <script defer src="assets/application.js"></script>
   <script defer src="assets/quote.js"></script>
+  <script defer src="assets/customer-profile.js"></script>
 </head>
 <body>
   <main id="login-view" class="login-layout">
@@ -49,17 +59,17 @@
     </section>
   </main>
   <div id="home-view" class="home-layout" hidden>
-    <header class="home-header"><a class="brand" href="./"><span class="brand-mark" aria-hidden="true">✚</span> pet doctor.</a><span class="header-location">Cotizar servicios</span><div class="session-controls"><span id="session-user"></span><button id="logout-button" class="secondary-button" type="button">Cerrar sesión</button></div></header>
-    <main class="home-content" tabindex="-1" id="home-content">
-      <span class="section-tag">TU ESPACIO DE TRABAJO</span><h1>Todo empieza con un buen cuidado.</h1><p class="muted">Sesión iniciada. Esta es la base para los próximos módulos de Pet Doctor.</p>
-      <div class="module-grid">
-        <article><span class="module-number">01</span><h2>Programación de servicios</h2><p>Cinco tipos de servicio, un solo lugar para organizarlos.</p><span class="status">Pendiente de desarrollo</span></article>
-        <article><span class="module-number">02</span><h2>Dueños y mascotas</h2><p>Registro de clientes, mascotas e importación de archivos CSV.</p><span class="status">Pendiente de desarrollo</span></article>
-        <article><span class="module-number">03</span><h2>Consulta de atenciones</h2><p>Consulta del historial y exportación de información.</p><span class="status">Pendiente de desarrollo</span></article>
-        <article><span class="module-number">04</span><h2>Ficha de cliente y mascota</h2><p>Información relacionada y acciones conectadas a n8n.</p><span class="status">Pendiente de desarrollo</span></article>
-      </div>
-      <p class="academic-note">Prototipo académico · El acceso se valida en el navegador.</p>
-    </main>
+    <header class="home-header"><a class="brand" href="./"><span class="brand-mark" aria-hidden="true">✚</span> pet doctor.</a><span class="header-location" id="header-location">Clientes</span><div class="session-controls"><span id="session-user"></span><button id="logout-button" class="secondary-button" type="button">Cerrar sesión</button></div></header>
+    <div class="application-frame"><aside class="app-sidebar"><button type="button" id="menu-toggle" class="secondary-button" aria-expanded="false" aria-controls="app-nav">☰ Menú</button><nav id="app-nav" aria-label="Módulos de Pet Doctor"><span class="nav-caption">TU ESPACIO</span><button type="button" data-module="clients" id="nav-clients" aria-current="page">Clientes</button><button type="button" data-module="quote" id="nav-quote">Cotización</button><button type="button" id="open-data">Datos y respaldos</button><p class="sidebar-note">Datos guardados en este navegador.<br>Acceso académico.</p></nav></aside>
+      <main class="app-main"><div id="file-message" class="file-message" role="status" hidden></div><div id="storage-recovery" class="storage-recovery" hidden><p>Hay un guardado pendiente que aún no forma parte de la base local.</p><button type="button" id="retry-save" class="secondary-button">Reintentar guardado</button><button type="button" id="download-pending" class="text-button">Descargar respaldo pendiente</button></div>
+        <section id="clients-module" aria-label="Clientes"><div id="customers-content"></div></section>
+        <section id="quote-module" aria-label="Cotización" hidden><div class="home-content" tabindex="-1" id="home-content"></div></section>
+      </main>
+    </div>
+    <div id="shared-editor"></div>
+    <dialog id="data-dialog" class="data-dialog" aria-labelledby="data-title"><div class="dialog-heading"><h2 id="data-title">Datos y respaldos</h2><button type="button" id="close-data" class="secondary-button">Cerrar ✕</button></div><p id="master-count" class="field-hint"></p><div class="data-actions"><button type="button" id="export-master" class="secondary-button">Descargar base JSON</button><button type="button" id="import-master" class="secondary-button">Cargar base JSON</button><button type="button" id="import-registry" class="text-button">Importar registro anterior</button></div><p class="field-hint">El respaldo JSON contiene todos los clientes, perritos, cotizaciones y atenciones. La carga reemplaza la base actual previa confirmación.</p>
+      <form id="calls-config" novalidate><h3>Conexión n8n</h3><label for="calls-url">URL del webhook n8n<input id="calls-url" type="url" autocomplete="off" placeholder="https://tu-instancia/webhook-test/pet-doctor-llamadas-demo"></label><label for="calls-key">Clave de llamadas para esta sesión<input id="calls-key" type="password" autocomplete="off" maxlength="1024" placeholder="X-PetDoctor-Call-Key"></label><p id="calls-key-status" class="field-hint" role="status"></p><p class="field-hint">La clave se conserva solo en memoria hasta cerrar sesión o recargar; no se guarda ni se exporta. Configura Header Auth y los destinos permitidos en n8n. Completar estos campos no inicia llamadas.</p><div class="data-actions"><button type="submit" class="secondary-button">Guardar conexión n8n</button><button type="button" id="forget-calls-key" class="text-button">Olvidar clave de sesión</button></div></form><p id="data-message" class="file-message" role="status" hidden></p><div class="data-actions"><button type="button" id="data-retry" class="text-button">Reintentar guardado pendiente</button><button type="button" id="data-pending" class="text-button">Descargar respaldo pendiente</button></div>
+    </dialog><input type="file" id="master-file" accept=".json,application/json" hidden><input type="file" id="registry-file" accept=".json,application/json" hidden>
   </div>
 </body>
 </html>

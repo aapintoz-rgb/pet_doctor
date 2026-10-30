@@ -1,0 +1,30 @@
+/* Registro local: selectores nativos y un único diálogo de edición. */
+.client-section{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;margin:0 0 24px;min-width:0}
+.client-heading,.client-pets-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}
+.client-heading h2{margin:8px 0;font-size:25px;letter-spacing:-.7px}.client-heading p{margin:0;color:var(--muted);font-size:14px}
+.client-section>label,.client-selectors label,.client-dialog label{font-size:14px;line-height:1.5}
+.client-section input,.client-section select,.client-dialog input,.client-dialog select{font:inherit;font-size:16px;min-height:48px;width:100%;min-width:0;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink);padding:10px 12px}
+.client-section select,.client-dialog select{margin-top:8px;white-space:nowrap;text-overflow:ellipsis}
+.client-section input:focus-visible,.client-section select:focus-visible,.client-dialog input:focus-visible,.client-dialog select:focus-visible{outline:3px solid #66864b;outline-offset:3px}
+.client-selectors{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px;margin-top:16px}
+.client-selectors label{min-width:0;margin:0}.client-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}
+.client-section button:disabled,.client-dialog button:disabled{opacity:.6;cursor:not-allowed}
+.client-results{max-height:260px;overflow:auto;overscroll-behavior:contain}
+.client-result{display:block;width:100%;text-align:left;background:#fafbf7;border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-top:8px;color:var(--ink);overflow-wrap:anywhere}
+.client-result:hover,.client-result:focus-visible{background:var(--sage)}.client-result strong{display:block;font-size:15px}.client-result span{display:block;font-size:13px;margin-top:5px;color:var(--muted)}
+.client-dialog{max-width:720px;padding:28px;width:calc(100% - 32px);max-height:90dvh}
+.client-dialog h2{font-size:24px;margin:0}.client-dialog .dialog-heading{align-items:flex-start;margin-bottom:16px}.client-dialog .dialog-heading button{flex-shrink:0}
+.owner-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}.owner-fields>label:first-child{grid-column:1/-1}
+.client-dialog input{display:block;margin-top:8px}.client-dialog label{margin:0}
+.client-pets-heading{margin-top:24px;margin-bottom:12px}.client-pets-heading h3{font-size:18px;margin:0}
+.draft-pet{min-width:0;border:1px solid var(--line);border-radius:10px;padding:18px;margin:0 0 16px;background:var(--paper)}
+.draft-pet legend{font-size:14px;font-weight:700;padding:0 7px;overflow-wrap:anywhere}
+.pet-record-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.client-dialog .field-hint{font-size:13px;color:var(--muted);line-height:1.6}.client-dialog .error{font-size:14px;overflow-wrap:anywhere}
+.client-dialog-actions{display:flex;gap:12px;align-items:center;border-top:1px solid var(--line);padding-top:18px;margin-top:20px}
+.client-dialog-actions .primary-button{margin:0;width:auto;flex:1;justify-content:center}.client-dialog-actions .secondary-button{min-height:50px}
+.client-dialog .text-button{min-height:44px}.client-dialog button{font:inherit;font-size:14px}
+.storage-recovery{border:1px solid #e6bbb1;border-radius:9px;padding:16px;margin-bottom:20px;background:#fff5ee;display:flex;align-items:center;gap:14px;flex-wrap:wrap}.storage-recovery p{margin:0;font-size:14px;flex-basis:100%}
+#client-form-recovery{border:1px solid var(--line);padding:12px;margin-top:14px;border-radius:8px}#client-form-recovery button{margin-right:10px}
+@media(max-width:800px){.client-section{padding:20px}.client-heading .section-tag{font-size:9px;letter-spacing:1px}}
+@media(max-width:540px){.client-heading{align-items:flex-start;flex-direction:column;gap:14px}.client-heading h2{font-size:23px}.client-section{padding:18px 14px}.client-selectors{grid-template-columns:1fr;gap:14px}.client-actions{gap:8px}.client-actions .text-button{text-align:left}.client-dialog{padding:20px 16px;width:calc(100% - 20px);max-height:94dvh}.client-dialog h2{font-size:21px}.owner-fields,.pet-record-options{grid-template-columns:1fr;gap:14px}.draft-pet{padding:14px 12px}.client-dialog .dialog-heading{gap:10px}.client-dialog .dialog-heading button{font-size:12px;padding:10px}.storage-recovery button{width:100%}}

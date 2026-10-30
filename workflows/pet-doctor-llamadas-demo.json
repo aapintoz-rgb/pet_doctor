@@ -1,0 +1,238 @@
+{
+  "name": "Pet Doctor - llamadas de demostración",
+  "active": false,
+  "nodes": [
+    {
+      "id": "pd-call-webhook",
+      "name": "Webhook llamadas",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "682e5897-c691-447e-8258-4c1bbb930282",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pet-doctor-llamadas-demo",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "http://127.0.0.1:8000"
+        }
+      },
+      "notes": "Configurar una credencial Header Auth con Name X-PetDoctor-Call-Key. No activar sin credencial ni destinos verificados.",
+      "notesInFlow": true
+    },
+    {
+      "id": "pd-call-validate",
+      "name": "Validar invocación",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        200
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "function validateInvocation(body, permitted = {}) {\n  const errors = [], fields = ['action','phone','message','clientId','requestId'];\n  const data = body && typeof body === 'object' && !Array.isArray(body) ? body : {};\n  function text(field,max) {\n    if(typeof data[field]!=='string'){errors.push('El campo '+field+' debe ser texto.');return '';}\n    const value=data[field];if(!value.trim()||value.length>max)errors.push('El campo '+field+' es obligatorio y admite hasta '+max+' caracteres.');return value;\n  }\n  if(Object.keys(data).some(field=>!fields.includes(field)))errors.push('La solicitud contiene campos no admitidos.');\n  if(data.action!=='llamada')errors.push('La acción debe ser llamada.');\n  const clientId=text('clientId',100),requestId=text('requestId',100);\n  const rawPhone=text('phone',32),phone=rawPhone.replace(/[\\s().-]/g,'');\n  if(!/^\\+[1-9]\\d{6,14}$/.test(phone))errors.push('El teléfono debe incluir un prefijo internacional válido.');\n  const message=typeof data.message==='string'?data.message.normalize('NFC').trim():'';\n  if(typeof data.message!=='string'||Array.from(message).length<1||Array.from(message).length>120)errors.push('El mensaje debe tener entre 1 y 120 caracteres.');\n  function rejected(statusCode,status,details){return {action:'invalida',statusCode,response:{ok:false,status,requestId:requestId&&requestId.length<=100?requestId:null,clientId:clientId&&clientId.length<=100?clientId:null,message:'No se pudo procesar la solicitud.',errors:details}};}\n  if(errors.length)return rejected(400,'solicitud_invalida',errors);\n  const allowed=Object.hasOwn(permitted,clientId)&&typeof permitted[clientId]==='string'?permitted[clientId].replace(/[\\s().-]/g,''):'';\n  if(!allowed||phone!==allowed)return rejected(403,'destino_no_autorizado',['El cliente y teléfono no están en la lista permitida de demostración.']);\n  return {action:'llamada',phone,message,clientId,requestId};\n}\n\n// Configuración exclusiva de n8n: pares clientId -> teléfono verificado.\n// Vacía por defecto: todas las solicitudes se rechazan.\nconst PERMITTED = {};\nreturn [{json:validateInvocation($input.first().json.body, PERMITTED)}];"
+      }
+    },
+    {
+      "id": "pd-call-switch",
+      "name": "Switch llamada",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        520,
+        200
+      ],
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "pd-call-rule",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "llamada",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "llamada"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "pd-call-twilio",
+      "name": "Make a call",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        800,
+        100
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "resource": "call",
+        "operation": "make",
+        "from": "",
+        "to": "={{ $json.phone }}",
+        "twiml": false,
+        "message": "={{ $json.message }}",
+        "options": {}
+      },
+      "notes": "Seleccionar credencial Twilio y completar From con el número Voice autorizado. To y Message vienen del validador. Sin callbacks.",
+      "notesInFlow": true
+    },
+    {
+      "id": "pd-call-adapt",
+      "name": "Adaptar respuesta Twilio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        100
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "function adaptTwilio(result,invocation) {\n  const requestId=invocation.requestId,clientId=invocation.clientId;\n  if(!result?.error && typeof result?.sid==='string' && /^CA[\\da-f]{32}$/i.test(result.sid) && ['queued','initiated','ringing','in-progress'].includes(result.status))return {statusCode:202,response:{ok:true,status:'llamada_iniciada',requestId,clientId,callSid:result.sid,providerStatus:result.status,message:'Twilio aceptó la solicitud de llamada.'}};\n  // No se exponen errores originales: pueden contener datos internos del proveedor.\n  return {statusCode:502,response:{ok:false,status:'resultado_desconocido',requestId,clientId,message:'Resultado desconocido: comprueba los registros de Twilio antes de intentar otra llamada',errors:['No se pudo confirmar la aceptación de la llamada por Twilio.']}};\n}\nreturn [{json:adaptTwilio($input.first().json, $('Validar invocación').first().json)}];"
+      }
+    },
+    {
+      "id": "pd-call-error",
+      "name": "Preparar error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        340
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const data=$input.first().json;\nreturn [{json:{statusCode:data.statusCode||400,response:data.response||{ok:false,status:'solicitud_invalida',requestId:null,message:'Solicitud inválida.',errors:['La acción no está permitida.']}}}];"
+      }
+    },
+    {
+      "id": "pd-call-response",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1360,
+        220
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.response }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook llamadas": {
+      "main": [
+        [
+          {
+            "node": "Validar invocación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar invocación": {
+      "main": [
+        [
+          {
+            "node": "Switch llamada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch llamada": {
+      "main": [
+        [
+          {
+            "node": "Make a call",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make a call": {
+      "main": [
+        [
+          {
+            "node": "Adaptar respuesta Twilio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adaptar respuesta Twilio": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar error": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
