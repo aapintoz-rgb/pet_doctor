@@ -237,8 +237,8 @@ uiTest('Llamada usa el registro, revisión y confirmación; no permite destino a
   a.click('#call-confirm');await new Promise(resolve=>setImmediate(resolve));assert.equal(calls.length,1);assert.equal(calls[0].action,'llamada');assert.equal(calls[0].email,undefined);assert.match(a.el('#communication-result').textContent,/Llamada iniciada/);assert.equal(a.master().owners[0].contact,owner.contact);a.cleanup();
 });
 
-uiTest('Correo queda pendiente y no dispara peticiones ni acciones de prueba',()=>{
-  const a=app({initial:fixture().workspace});let requests=0;a.w.fetch=async()=>{requests++;};a.click('[data-profile-id]');assert.equal(a.el('#profile-email').disabled,true);assert.match(a.el('#profile-email').textContent,/Pendiente/);a.click('#profile-email');assert.equal(requests,0);assert.equal(a.el('#communication-dialog').open,false);a.cleanup();
+uiTest('Correo sin conexión está bloqueado y no dispara peticiones',()=>{
+  const a=app({initial:fixture().workspace});let requests=0;a.w.fetch=async()=>{requests++;};a.click('[data-profile-id]');assert.equal(a.el('#profile-email').disabled,true);assert.match(a.el('#profile-email').textContent,/Enviar correo/);a.click('#profile-email');assert.equal(requests,0);assert.equal(a.el('#communication-dialog').open,false);a.cleanup();
 });
 
 uiTest('Menú móvil admite cierre con Escape y no mezcla elementos ni IDs de módulos',()=>{
@@ -278,4 +278,58 @@ uiTest('Clave solo en memoria: no aparece en configuración persistida, respaldo
 uiTest('Respuesta no confirmada muestra resultado desconocido y exige preparar otra llamada',async()=>{
   const a=app({initial:fixture().workspace});configureCalls(a);a.click('[data-profile-id]');a.w.fetch=async()=>{throw new TypeError('Failed to fetch');};
   a.click('#profile-phone');a.fill('#communication-message','Hola');a.el('#communication-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));a.click('#call-confirm');await new Promise(resolve=>setImmediate(resolve));assert.match(a.el('#communication-result').textContent,/Resultado desconocido/);assert.equal(a.el('#call-review').hidden,true);assert.equal(a.el('#call-new').hidden,false);a.click('#call-new');assert.equal(a.el('#communication-message').value,'');a.cleanup();
+});
+
+
+function reviewEmail(a,message='Hola, Ana.',subject='Seguimiento'){
+  a.fill('#communication-subject',subject);a.fill('#communication-message',message);
+  a.el('#communication-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));
+}
+uiTest('Correo de ficha revisa, confirma, correlaciona y no persiste mensaje, clave ni resultado',async()=>{
+  const f=fixture(),a=app({initial:f.workspace});configureCalls(a);a.click('[data-profile-id]');const before=JSON.stringify(a.master());
+  let count=0,payload;a.w.fetch=async(u,o)=>{count++;payload=JSON.parse(o.body);return {status:200,json:async()=>({ok:true,status:'correo_enviado',requestId:payload.requestId,clientId:payload.clientId,messageId:'gmail-id'})};};
+  assert.equal(a.el('#profile-email').disabled,false);a.click('#profile-email');assert.equal(a.el('#communication-email').readOnly,true);assert.equal(a.el('#communication-email').value,owner.email);assert.equal(a.el('#communication-phone-label').hidden,true);assert.equal(a.el('#call-counter').textContent,'0/360');assert.equal(a.w.document.activeElement.id,'communication-subject');
+  reviewEmail(a,'Hola <b>Ana</b>\nSegunda línea');assert.equal(count,0);assert.equal(a.el('#call-review').hidden,false);assert.equal(a.el('#call-review-message b'),null);assert.equal(a.el('#email-review-subject').textContent,'Seguimiento');
+  a.click('#call-edit');assert.equal(a.el('#communication-message').value,'Hola <b>Ana</b>\nSegunda línea');reviewEmail(a);a.click('#call-confirm');await new Promise(r=>setImmediate(r));
+  assert.equal(count,1);assert.deepEqual(Object.keys(payload),['action','email','subject','message','clientId','requestId']);assert.equal(payload.action,'correo');assert.equal(payload.email,owner.email);assert.match(a.el('#communication-result').textContent,/Correo enviado/);assert.match(a.el('#communication-result').textContent,/gmail-id/);assert.equal(JSON.stringify(a.master()),before);
+  a.click('#export-master');const backup=JSON.stringify(await a.backup());assert.equal(backup.includes('gmail-id'),false);assert.equal(backup.includes('clave-solo-de-test'),false);
+  a.click('#communication-close');assert.equal(a.w.document.activeElement.id,'profile-email');a.cleanup();
+});
+uiTest('Correo: contador 360, asunto 200, errores conservan campos y cancelar no escribe',()=>{
+  const a=app({initial:fixture().workspace});configureCalls(a);a.click('[data-profile-id]');const before=[...a.data.entries()];a.click('#profile-email');
+  a.fill('#communication-subject','😀'.repeat(200));a.fill('#communication-message','😀'.repeat(360));assert.equal(a.el('#call-counter').textContent,'360/360');assert.equal(a.el('#communication-run').disabled,false);
+  a.fill('#communication-message','😀'.repeat(361));assert.equal(a.el('#communication-run').disabled,true);assert.equal(a.el('#communication-message').value,'😀'.repeat(361));a.el('#communication-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));assert.match(a.el('#communication-result').textContent,/360/);
+  a.fill('#communication-message',' e\u0301 ');assert.equal(a.el('#call-counter').textContent,'1/360');a.fill('#communication-subject','x'.repeat(201));assert.equal(a.el('#communication-run').disabled,true);
+  a.el('#communication-dialog').dispatchEvent(new a.w.Event('cancel',{cancelable:true}));assert.equal(a.el('#communication-dialog').open,false);assert.deepEqual([...a.data.entries()],before);assert.equal(a.w.document.activeElement.id,'profile-email');
+  a.click('#profile-phone');assert.equal(a.el('#communication-subject-label').hidden,true);assert.equal(a.el('#call-counter').textContent,'0/120');a.cleanup();
+});
+uiTest('Correo sin dirección o clave permanece bloqueado; la configuración existente es compartida',()=>{
+  const f=fixture();f.workspace.owners[0].email='';const a=app({initial:f.workspace});configureCalls(a);a.click('[data-profile-id]');assert.equal(a.el('#profile-email').disabled,true);assert.match(a.el('.profile-communications').textContent,/dirección de correo/);
+  a.click('#profile-edit');a.fill('[data-owner-key="email"]','ana@example.com');a.submit();assert.equal(a.el('#profile-email').disabled,false);
+  a.click('#open-data');a.click('#forget-calls-key');a.click('#close-data');assert.equal(a.el('#profile-email').disabled,true);assert.equal(a.el('#profile-phone').disabled,true);a.cleanup();
+});
+uiTest('Cambio de correo o desaparición del cliente tras revisar impide enviar',()=>{
+  for(const remove of [false,true]){
+    const a=app({initial:fixture().workspace});configureCalls(a);a.click('[data-profile-id]');a.click('#profile-email');reviewEmail(a);let count=0;a.w.fetch=async()=>{count++;};
+    const controller=a.w.PetDoctorApplication,current=controller.getWorkspace();
+    if(remove){current.owners.splice(0);a.click('#call-confirm');}
+    else{const changed=a.w.PetDoctorWorkspace.saveClient(current,{owner:{...current.owners[0],email:'otra@example.com'},pets:[]});controller.commit(changed.workspace,()=>{},'test');a.click('#call-confirm');}
+    assert.equal(count,0);assert.match(a.el('#communication-result').textContent,/correo cambió/);a.cleanup();
+  }
+});
+uiTest('Envío de correo bloquea cierre, navegación y doble clic; otro intento necesita nueva revisión',async()=>{
+  const a=app({initial:fixture().workspace});configureCalls(a);a.click('[data-profile-id]');let finish,count=0;
+  a.w.fetch=(u,o)=>{count++;const p=JSON.parse(o.body);return new Promise(resolve=>{finish=()=>resolve({status:200,json:async()=>({ok:true,status:'correo_enviado',clientId:p.clientId,requestId:p.requestId,messageId:'id'})});});};
+  a.click('#profile-email');reviewEmail(a);a.click('#call-confirm');a.click('#call-confirm');assert.equal(count,1);assert.equal(a.el('#communication-close').disabled,true);a.el('#communication-dialog').dispatchEvent(new a.w.Event('cancel',{cancelable:true}));assert.equal(a.el('#communication-dialog').open,true);a.w.PetDoctorApplication.navigate('quote');assert.equal(a.el('#quote-module').hidden,true);
+  finish();await new Promise(r=>setImmediate(r));a.click('#call-confirm');assert.equal(count,1);a.click('#call-new');assert.equal(a.el('#communication-message').value,'');assert.equal(a.el('#communication-subject').value,'');assert.equal(a.el('#communication-run').disabled,true);a.cleanup();
+});
+uiTest('Correo rechaza destinatario desde n8n o muestra resultado desconocido sin reintentar',async()=>{
+  for(const status of [403,502]){
+    const a=app({initial:fixture().workspace});configureCalls(a);a.click('[data-profile-id]');const before=JSON.stringify(a.master());let count=0;
+    a.w.fetch=async(u,o)=>{count++;const p=JSON.parse(o.body);return {status,json:async()=>({ok:false,status:status===403?'destino_no_autorizado':'resultado_desconocido',clientId:p.clientId,requestId:p.requestId,errors:['Detalle']})};};
+    a.click('#profile-email');reviewEmail(a);a.click('#call-confirm');await new Promise(r=>setImmediate(r));assert.equal(count,1);assert.match(a.el('#communication-result').textContent,status===403?/no están autorizados/:/Resultado desconocido/);assert.equal(a.el('#communication-close').disabled,false);assert.equal(a.el('#call-new').hidden,false);assert.equal(JSON.stringify(a.master()),before);a.cleanup();
+  }
+});
+uiTest('Correo y navegación conservan servicios, selección y filtros de la cotización',async()=>{
+  const f=fixture(),a=app({initial:f.workspace});a.selectFixture(f);a.selectService();a.fill('#history-search','Luna');const service=a.el('[data-field="consulta.included"]');configureCalls(a);a.click('[data-profile-id]');a.click('#profile-email');reviewEmail(a);a.click('#communication-close');a.w.PetDoctorApplication.navigate('quote');assert.equal(service.checked,true);assert.equal(a.el('#owner-select').value,f.ownerId);assert.equal(a.el('#pet-select').value,f.petId);assert.equal(a.el('#history-search').value,'Luna');a.cleanup();
 });

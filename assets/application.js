@@ -57,12 +57,12 @@
   }
   let dataOpener=null;
   function closeData(restoreFocus=true){const open=el('data-dialog').open;el('calls-key').value='';el('data-dialog').close();if(open && restoreFocus)dataOpener?.focus();}
-  function keyStatus(){el('calls-key-status').textContent=callsKey?'Clave disponible en memoria para esta sesión. Deja el campo vacío para conservarla.':'Sin clave de sesión: las llamadas reales están deshabilitadas.';}
+  function keyStatus(){el('calls-key-status').textContent=callsKey?'Clave disponible en memoria para esta sesión. Deja el campo vacío para conservarla.':'Sin clave de sesión: las comunicaciones reales están deshabilitadas.';}
   el('open-data').addEventListener('click',event=>{dataOpener=event.currentTarget;el('calls-url').value=I.readCallConfig(storage);el('calls-key').value='';keyStatus();el('data-message').hidden=true;el('data-dialog').showModal();el('calls-url').focus();});
   el('close-data').addEventListener('click',()=>closeData());el('data-dialog').addEventListener('cancel',event=>{event.preventDefault();closeData();});
   el('calls-config').addEventListener('submit',event=>{
     event.preventDefault();
-    try{const secret=el('calls-key').value?I.callKey(el('calls-key').value):callsKey;const url=I.saveCallConfig(storage,el('calls-url').value);callsKey=secret;el('calls-url').value=url;el('calls-key').value='';keyStatus();for(const listener of configListeners)listener();el('data-message').textContent='URL del webhook n8n guardada; la clave permanece solo en memoria. No se inició ninguna llamada.';}
+    try{const secret=el('calls-key').value?I.callKey(el('calls-key').value):callsKey;const url=I.saveCallConfig(storage,el('calls-url').value);callsKey=secret;el('calls-url').value=url;el('calls-key').value='';keyStatus();for(const listener of configListeners)listener();el('data-message').textContent='URL del webhook n8n guardada; la clave permanece solo en memoria. No se inició ninguna comunicación.';}
     catch(error){el('data-message').textContent=error.message;}el('data-message').hidden=false;
   });
   el('forget-calls-key').addEventListener('click',()=>{callsKey='';el('calls-key').value='';keyStatus();for(const listener of configListeners)listener();});

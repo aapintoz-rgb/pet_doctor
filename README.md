@@ -6,7 +6,7 @@ Aplicación web académica para servicios de perros, en HTML, CSS y JavaScript. 
 
 Abre `index.html` o sirve la carpeta con un servidor HTTP estático. Acceso académico: **admin / PetDoctor123**. Este login en el navegador no protege datos y no es autenticación de producción.
 
-Sitio de GitHub Pages: https://aapintoz-rgb.github.io/pet_doctor/. Publicación actualizada con Clientes, Cotización y la conexión única de n8n.
+Sitio de GitHub Pages: https://aapintoz-rgb.github.io/pet_doctor/. Publicación actualizada con Clientes, Cotización y la conexión única de n8n. Esta actualización incluye el formulario de correo de 360 caracteres. Completa los nodos de Gmail siguiendo la guía antes de probar el envío.
 
 ## Navegación y ficha cliente
 
@@ -61,7 +61,7 @@ Al importar en Excel, indica que DNI y teléfono son **texto** para conservar ce
 
 ## Conexión única con n8n
 
-En **Datos y respaldos → Conexión n8n** hay una sola URL: la del workflow modificado. La URL de llamadas ya configurada se conserva. La antigua configuración de pruebas se elimina al iniciar y nunca se reutiliza. El botón **Enviar correo · Pendiente** permanece deshabilitado hasta integrar Gmail; se retiraron las acciones de prueba.
+En **Datos y respaldos → Conexión n8n** hay una sola URL: la del workflow modificado. La URL de llamadas ya configurada se conserva. La antigua configuración de pruebas se elimina al iniciar y nunca se reutiliza. Se retiraron las acciones de prueba. La copia local habilita **Enviar correo** con destinatario registrado, conexión y clave; requiere completar manualmente la rama Gmail en n8n.
 
 ## Llamar desde la ficha (demostración controlada)
 
@@ -69,7 +69,7 @@ En **Datos y respaldos → Conexión n8n** hay una sola URL: la del workflow mod
 
 Escribe un mensaje de **1 a 120 caracteres Unicode**, normalizado con NFC y trim, sin recorte automático. Revisa cliente, teléfono y mensaje y pulsa **Confirmar llamada real**. No se añade prefijo ni se permite un destino alternativo; corrige el teléfono desde Editar datos. La aplicación vuelve a comprobar que no cambió antes de enviar.
 
-El flujo de n8n valida los datos y un par autorizado `clientId → teléfono`. La lista viene vacía por defecto. Configura además la credencial Header Auth del Webhook, la de Twilio y el número Voice de origen. El correo queda pendiente y no realiza peticiones.
+El flujo de n8n valida los datos y un par autorizado `clientId → teléfono`. La lista viene vacía por defecto. Configura además la credencial Header Auth del Webhook, la de Twilio y el número Voice de origen. El correo se configura en la misma conexión; consulta la guía de correo.
 
 **Workflow:** usa el flujo modificado que ya tienes en n8n. `workflows/pet-doctor-llamadas-demo.json` queda como referencia opcional, desactivada y sin credenciales ni From; no necesitas un segundo workflow. **Guía completa:** `docs/llamadas-demo-n8n.md`, con contrato JSON, mapeo de nodos, preflight y pasos de configuración.
 
@@ -107,7 +107,7 @@ $env:NODE_PATH = (Resolve-Path ../../work/test-runtime/node_modules).Path
 node --test tests/pricing.test.cjs tests/workspace.test.cjs tests/history.test.cjs tests/integration.test.cjs tests/calls.test.cjs tests/attention.test.cjs
 ```
 
-Consulta `docs/estado.md` y `docs/ficha-tecnica-continuidad.md` antes de continuar. Siguen pendientes agenda, ficha clínica veterinaria, importación CSV, correo real, despliegue de comunicaciones de producción y Google Apps Script.
+Consulta `docs/estado.md` y `docs/ficha-tecnica-continuidad.md` antes de continuar. Siguen pendientes agenda, ficha clínica veterinaria, importación CSV, verificación real de Gmail, despliegue de comunicaciones de producción y Google Apps Script.
 
 
 ## Publicación y claves de sesión
@@ -118,4 +118,15 @@ El sitio es público y su login es académico. La autorización de comunicacione
 
 El navegador publicado tiene un almacenamiento distinto al de la copia local: descarga el respaldo JSON local y cárgalo en Pages si deseas trasladar tus datos. La clave se introduce nuevamente y no viaja con ese respaldo.
 
-Estado comunicado por el usuario: llamada y respuesta llamada_iniciada comprobadas con HTTP Request y Url de plantilla. El trial rechazó los parámetros del nodo Twilio original. La locución personalizada del mensaje sigue pendiente; el flujo operativo actual reproduce la plantilla. El workflow JSON del repositorio conserva una referencia para llamadas con Twiml y no debe reemplazar automáticamente el flujo remoto que ya funciona. Gmail sigue pendiente.
+Estado comunicado por el usuario: llamada y respuesta llamada_iniciada comprobadas con HTTP Request y Url de plantilla. El trial rechazó los parámetros del nodo Twilio original. La locución personalizada del mensaje sigue pendiente; el flujo operativo actual reproduce la plantilla. El workflow JSON del repositorio conserva una referencia para llamadas con Twiml y no debe reemplazar automáticamente el flujo remoto que ya funciona. La interfaz de correo está implementada localmente; configuración manual y prueba real de Gmail pendientes.
+
+
+## Enviar correo desde la ficha
+
+Enviar correo usa la dirección de la ficha, de solo lectura, asunto de 1–200 caracteres y mensaje de 1–360 (triple que la llamada). Normalización NFC/trim y conteo Unicode con Array.from, sin truncar. Revisa y confirma el envío real. Se vuelve a comprobar cliente y destinatario; sin URL/clave o dirección única válida no se habilita. No admite adjuntos, HTML, CC ni BCC.
+
+Una sola URL y clave de sesión para correo y llamada. El webhook autoriza el par cliente–correo antes de Gmail. HTTP 200, correo_enviado, IDs correlacionados y messageId verificable confirman la aceptación por Gmail, no la entrega/lectura. Timeout/red/respuesta inesperada: resultado desconocido; revisar Gmail/n8n antes de repetir. Sin reintentos ni persistencia de mensajes/resultados. Workspace sigue en versión 2.
+
+**Tú actualizas n8n:** [guía paso a paso con los códigos completos](docs/correo-n8n.md). El fragmento de validación se antepone al código vigente sin borrar llamadas ni sus destinos; un adaptador Gmail nuevo comparte Respond to Webhook. No importar el workflow antiguo encima del remoto operativo. Las listas reales se configuran solo en n8n.
+
+95 pruebas aprobadas sin omitidas. No se enviaron correos ni llamadas reales ni se modificó n8n. Esta entrega se publica en Pages por solicitud del usuario. Pendientes configuración/prueba de Gmail por el usuario y revisión visual real a 360/768/1440.

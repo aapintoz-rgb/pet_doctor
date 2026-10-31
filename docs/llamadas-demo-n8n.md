@@ -1,6 +1,6 @@
 # Llamadas de demostración desde la ficha cliente
 
-Esta guía describe el único workflow modificado que usa la aplicación. El webhook anterior de pruebas se ha retirado de Pet Doctor. El correo queda pendiente, con su botón deshabilitado. Esta actualización no modifica ni ejecuta el flujo remoto.
+Esta guía describe el único workflow modificado que usa la aplicación. El webhook anterior de pruebas se ha retirado de Pet Doctor. La copia local incorpora Enviar correo con 360 caracteres; consulta docs/correo-n8n.md para los cambios manuales. La prueba remota de Gmail sigue pendiente. Esta actualización no modifica ni ejecuta el flujo remoto.
 
 ## 1. Preparar el workflow
 

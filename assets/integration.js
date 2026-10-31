@@ -15,8 +15,8 @@
   const validCallPhone=value=>/^\+[1-9]\d{6,14}$/.test(normalizePhone(value));
   const normalizeCallMessage=value=>typeof value==='string'?value.normalize('NFC').trim():'';
   const callMessageLength=value=>Array.from(normalizeCallMessage(value)).length;
-  function callEndpoint(value){if(typeof value!=='string'||!value.trim())throw new Error('Configura la URL de llamadas de demostración en «Datos y respaldos».');return endpoint(value);}
-  function callKey(value){if(typeof value!=='string'||!value.trim()||value.length>1024||/[\u0000-\u001f\u007f]/.test(value))throw new Error('Introduce una clave de llamadas válida para esta sesión en «Datos y respaldos».');return value.trim();}
+  function callEndpoint(value){if(typeof value!=='string'||!value.trim())throw new Error('Configura la URL del webhook n8n en «Datos y respaldos».');return endpoint(value);}
+  function callKey(value){if(typeof value!=='string'||!value.trim()||value.length>1024||/[\u0000-\u001f\u007f]/.test(value))throw new Error('Introduce una clave de comunicaciones válida para esta sesión en «Datos y respaldos».');return value.trim();}
   function readCallConfig(storage){try{const source=storage.getItem(CALL_CONFIG_KEY);return source?callEndpoint(JSON.parse(source).url):'';}catch{return '';}}
   function saveCallConfig(storage,value){const url=value.trim()?callEndpoint(value):'';try{storage.setItem(CALL_CONFIG_KEY,JSON.stringify({url}));}catch{throw new Error('No se pudo guardar la URL de llamadas.');}return url;}
   function validateCallPayload(payload){
@@ -53,6 +53,46 @@
     })();
     try{return await Promise.race([task,timeout]);}finally{clearTimeout(timer);}
   }
-  const api={endpoint,retireLegacyConfig,CALL_CONFIG_KEY,normalizePhone,validCallPhone,normalizeCallMessage,callMessageLength,callEndpoint,callKey,readCallConfig,saveCallConfig,validateCallPayload,prepareCall,runCall,UNKNOWN_CALL};
+  const normalizeEmail=value=>typeof value==='string'?value.trim():'';
+  const validEmailRecipient=value=>typeof value==='string'&&value.length<=254&&W.validEmail(value)&&!/[\s,;<>]/.test(value);
+  const normalizeEmailText=normalizeCallMessage;
+  const emailTextLength=value=>Array.from(normalizeEmailText(value)).length;
+  function validateEmailPayload(payload){
+    const fields=['action','email','subject','message','clientId','requestId'];
+    if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).length!==fields.length||Object.keys(payload).some(key=>!fields.includes(key)))throw new Error('El correo solo admite acción, destinatario, asunto, mensaje e identificadores.');
+    if(payload.action!=='correo')throw new Error('La acción de correo no es válida.');
+    for(const field of ['clientId','requestId'])if(typeof payload[field]!=='string'||!payload[field].trim()||payload[field].length>100)throw new Error('El correo necesita identificadores válidos.');
+    if(!validEmailRecipient(payload.email)||normalizeEmail(payload.email)!==payload.email)throw new Error('Corrige el correo del cliente en «Editar datos»: se necesita una única dirección válida.');
+    if(typeof payload.subject!=='string'||!emailTextLength(payload.subject)||emailTextLength(payload.subject)>200||/[\r\n]/.test(payload.subject)||normalizeEmailText(payload.subject)!==payload.subject)throw new Error('El asunto debe tener entre 1 y 200 caracteres y ocupar una sola línea.');
+    if(typeof payload.message!=='string'||!emailTextLength(payload.message)||emailTextLength(payload.message)>360||normalizeEmailText(payload.message)!==payload.message)throw new Error('El mensaje de correo debe tener entre 1 y 360 caracteres.');
+    return payload;
+  }
+  function prepareEmail(client,draft){
+    if(!client?.id)throw new Error('Selecciona un cliente registrado.');
+    if(/[\r\n]/.test(client.email||'')||/[\r\n]/.test(draft?.subject||''))throw new Error('El correo y el asunto deben ocupar una sola línea.');
+    return validateEmailPayload({action:'correo',email:normalizeEmail(client.email),subject:normalizeEmailText(draft?.subject),message:normalizeEmailText(draft?.message),clientId:client.id,requestId:W.newId()});
+  }
+  const UNKNOWN_EMAIL='Resultado desconocido: revisa Enviados en Gmail y la ejecución de n8n antes de intentar otro envío';
+  async function runEmail(value,payload,key,{fetchImpl=g.fetch?.bind(g),timeoutMs=15000}={}){
+    const url=endpoint(value),secret=callKey(key);validateEmailPayload(payload);
+    if(!fetchImpl)return {kind:'validation',message:'El navegador no permite realizar esta petición.'};
+    const controller=new AbortController();let timer;
+    const unknown=()=>({kind:'unknown',message:UNKNOWN_EMAIL,requestId:payload.requestId});
+    const timeout=new Promise(resolve=>{timer=setTimeout(()=>{controller.abort();resolve(unknown());},timeoutMs);});
+    const task=(async()=>{
+      try{
+        const response=await fetchImpl(url,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',headers:{'Content-Type':'application/json','X-PetDoctor-Call-Key':secret},body:JSON.stringify(payload),signal:controller.signal});
+        if(response.status===401)return {kind:'denied',message:'El webhook rechazó la autenticación. Revisa la clave de sesión.',requestId:payload.requestId};
+        let body;try{body=await response.json();}catch{return response.status===403?{kind:'denied',message:'El webhook rechazó el acceso. Revisa la clave y el correo autorizado.',requestId:payload.requestId}:unknown();}
+        const correlated=body?.requestId===payload.requestId&&body.clientId===payload.clientId;
+        if(response.status===200&&body?.ok===true&&body.status==='correo_enviado'&&correlated&&typeof body.messageId==='string'&&body.messageId.trim())return {kind:'accepted',message:'Correo enviado: Gmail aceptó el envío. Esto no confirma la entrega ni la lectura.',messageId:body.messageId,requestId:payload.requestId};
+        if(correlated&&body?.ok===false&&((response.status===400&&body.status==='solicitud_invalida')||(response.status===403&&body.status==='destino_no_autorizado')))return {kind:'rejected',message:response.status===403?'El cliente y correo no están autorizados en n8n.':'n8n rechazó los datos del correo.',errors:Array.isArray(body.errors)?body.errors.filter(error=>typeof error==='string'):[],requestId:payload.requestId};
+        if(response.status===403)return {kind:'denied',message:'El webhook rechazó el acceso o el destinatario. Revisa la configuración.',requestId:payload.requestId};
+        return unknown();
+      }catch{return unknown();}
+    })();
+    try{return await Promise.race([task,timeout]);}finally{clearTimeout(timer);}
+  }
+  const api={normalizeEmail,validEmailRecipient,normalizeEmailText,emailTextLength,validateEmailPayload,prepareEmail,runEmail,UNKNOWN_EMAIL,endpoint,retireLegacyConfig,CALL_CONFIG_KEY,normalizePhone,validCallPhone,normalizeCallMessage,callMessageLength,callEndpoint,callKey,readCallConfig,saveCallConfig,validateCallPayload,prepareCall,runCall,UNKNOWN_CALL};
   g.PetDoctorIntegration=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);

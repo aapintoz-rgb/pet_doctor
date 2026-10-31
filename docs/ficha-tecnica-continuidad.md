@@ -112,3 +112,19 @@ Preparada publicación de la copia local en main para https://aapintoz-rgb.githu
 Usuario confirmó llamada real y respuesta llamada_iniciada usando HTTP Request con Url de plantilla. El mensaje personalizado no está comprobado y se muestra la limitación del trial en la revisión. JSON de workflow de referencia no sustituye al flujo remoto ya modificado. Gmail pendiente. 79 pruebas automatizadas aprobadas antes de publicar; comprobación de la publicación se realiza por separado.
 
 Publicación comprobada por HTTPS: HTTP 200, módulo Clientes y única conexión n8n presentes, configuración anterior ausente. Código y assets publicados; 79 pruebas aprobadas. No se realizó ninguna comunicación ni se cambió el workflow remoto durante la publicación.
+
+
+## Estado vigente: correo desde la ficha — entrega local, 30 de octubre de 2026
+
+Implementado Enviar correo: destinatario registrado de solo lectura, asunto 1–200, mensaje 1–360, NFC/trim y Array.from, revisión y confirmación real, bloqueo durante envío, 15 s y sin reintentos. El cliente y correo se verifican al confirmar. Una dirección simple, IDs obligatorios y payload mínimo action correo/email/subject/message/clientId/requestId. Una sola URL y X-PetDoctor-Call-Key; etiqueta de clave generalizada y secreto únicamente en memoria. Sin migración ni persistencia de comunicaciones.
+
+HTTP 200 + correo_enviado + ambos IDs + messageId no vacío es aceptación Gmail, no entrega/lectura. Error/red/CORS/timeout/JSON inválido/correlación incorrecta producen resultado desconocido; revisar Gmail y n8n antes de repetir. 400 datos, 403 par cliente-correo no autorizado, 401/403 autenticación, 502 proveedor/no confirmable.
+
+Cambios de n8n a cargo del usuario: docs/correo-n8n.md incluye instrucciones y códigos completos. workflows/validar-correo.snippet.js se ANTEPONE al validador existente; intercepta correo y conserva el recorrido original para llamada, incluidas sus listas reales. CORREOS_PERMITIDOS vacía por defecto. workflows/adaptar-gmail.code.js es un nodo NUEVO, conectado a Respond to Webhook existente. Fuentes reproducibles en email-contract.cjs y build-email-snippets.cjs. No sustituir el remoto con el JSON viejo de llamadas. No se modificó n8n ni se enviaron comunicaciones.
+
+95 pruebas aprobadas, 0 fallidas, 0 omitidas: 16 tarifas/archivos, 11 workspace, 9 historial/CSV, 3 configuración, 9 llamadas, 9 correo/n8n y 38 DOM. Verificados los fragmentos ejecutables y sus contratos, conservación del flujo de llamadas, secreto fuera de respaldo, teclado/foco y conservación de cotización. Revisión visual real a 360/768/1440 pendiente. Gmail real pendiente de configuración y prueba por el usuario. Esta nueva entrega es LOCAL; Pages sigue con el commit publicado anteriormente. Las notas anteriores que dicen que el botón de correo sigue pendiente son históricas.
+
+
+## Publicación de correo solicitada — 30 de octubre de 2026
+
+El usuario solicita subir la entrega porque está fuera de su PC. Se publica el formulario de correo de 360 caracteres, validaciones y guía docs/correo-n8n.md en main/GitHub Pages. 95 pruebas aprobadas, ninguna omitida. Se conservan la conexión única, clave solo en memoria y rama de llamada. Ninguna clave, credencial real ni backup de clientes se incluye. El usuario debe aplicar los cambios de n8n y realizar la prueba de Gmail; no se envían comunicaciones ni se modifica el workflow remoto durante esta publicación. Las menciones anteriores a entrega solo local corresponden al estado previo a esta solicitud.
