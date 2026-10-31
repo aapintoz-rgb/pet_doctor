@@ -14,9 +14,10 @@
     if(!scope && !g.confirm('Hay un guardado pendiente. ¿Quieres descartarlo?'))return false;
     pending=null;el('storage-recovery').hidden=true;el('client-form-recovery').hidden=true;return true;
   }
-  function commit(candidate,onSuccess=()=>{},scope='workspace',replace=false){
+  function commit(candidate,onSuccess=()=>{},scope='workspace',replace=false,baseFingerprint=null){
     if(pending && pending.scope!==scope)throw new Error('Resuelve el guardado pendiente antes de continuar.');
-    pending={candidate,onSuccess,scope,replace};
+    if(baseFingerprint&&JSON.stringify(workspace)!==baseFingerprint)throw new Error('La base cambió desde la revisión CSV. Revisa nuevamente el archivo antes de guardar.');
+    pending={candidate,onSuccess,scope,replace,baseFingerprint};
     try{workspace=store.commit(candidate,{replace});}
     catch(error){
       message(error.message,true);el('storage-recovery').hidden=false;
@@ -28,7 +29,7 @@
     for(const listener of listeners)listener(workspace);
     onSuccess();return true;
   }
-  function retry(){if(pending){const p=pending;if(p.scope==='import' && !g.confirm('Reintentar reemplazará toda la base y descartará la cotización. ¿Quieres continuar?'))return;commit(p.candidate,p.onSuccess,p.scope,p.replace);}}
+  function retry(){if(pending){const p=pending;if(p.scope==='import' && !g.confirm('Reintentar reemplazará toda la base y descartará la cotización. ¿Quieres continuar?'))return;try{commit(p.candidate,p.onSuccess,p.scope,p.replace,p.baseFingerprint);}catch(error){message(error.message,true);el('data-message').textContent=error.message;el('data-message').hidden=false;}}}
   function downloadPending(){if(pending){download(new Blob([JSON.stringify(pending.candidate,null,2)],{type:'application/json'}),'pet-doctor-respaldo-pendiente.json');message('Respaldo pendiente descargado. La operación todavía no se ha aplicado a la base local.');}}
   function downloadMaster(){download(new Blob([JSON.stringify(workspace,null,2)],{type:'application/json'}),'pet-doctor-base-v2.json');message('Base completa descargada.'+(pending?' Existe un guardado pendiente; usa su respaldo diferenciado para incluirlo.':''));}
   document.getElementById('shared-editor').innerHTML=g.PetDoctorClients.editorMarkup;
@@ -95,5 +96,7 @@
   g.addEventListener('beforeunload',event=>{if(isDirty()){event.preventDefault();event.returnValue='';}});
   el('logout-button').addEventListener('click',event=>{if(isDirty() && !g.confirm('Hay cambios o una operación pendiente. ¿Quieres cerrar sesión y descartarlos?'))event.stopImmediatePropagation();},true);
   g.PetDoctorApplication={getWorkspace:()=>workspace,subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},subscribeConfig(listener){configListeners.add(listener);return()=>configListeners.delete(listener);},register(name,module){modules.set(name,module);},commit,clearPending,hasPending:()=>!!pending,retry,downloadPending,download,message,editor,navigate,sessionChanged,getCallEndpoint:()=>I.readCallConfig(storage),getCallKey:()=>callsKey};
+  g.PetDoctorRegistryCsvView.mount(g.PetDoctorApplication);
+  g.PetDoctorRegistryCsvView.mount(g.PetDoctorApplication,{kind:'attentions'});
   updateCounts();navigate('clients',{focus:false});if(store.error())message(store.error(),true);
 })(globalThis);

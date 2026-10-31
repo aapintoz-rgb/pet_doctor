@@ -57,17 +57,22 @@
   }
   function calculate(state, catalog = C) {
     const services = Object.keys(catalog.services).filter(id => state.selections[id].included).map(id => servicePrice(id, state, catalog));
+    return totalize(services,catalog.taxPercent);
+  }
+  function totalize(services,taxPercent=C.taxPercent){
     const subtotal = services.filter(s => s.complete).reduce((sum, s) => sum + s.subtotal, 0);
-    const tax = Math.round(subtotal * catalog.taxPercent / 100);
+    if(!Number.isSafeInteger(subtotal)||subtotal<0||!Number.isSafeInteger(subtotal*taxPercent))throw new Error('Los importes exceden el rango seguro de cálculo.');
+    const tax = Math.round(subtotal * taxPercent / 100);
+    if(!Number.isSafeInteger(subtotal+tax))throw new Error('El total excede el rango seguro de cálculo.');
     let assigned = 0;
     const taxable = services.filter(s => s.complete);
-    taxable.forEach(s => { s.tax = Math.floor(s.subtotal * catalog.taxPercent / 100); assigned += s.tax; });
-    const ranked = [...taxable].sort((a,b) => (b.subtotal * catalog.taxPercent % 100) - (a.subtotal * catalog.taxPercent % 100));
+    taxable.forEach(s => { s.tax = Math.floor(s.subtotal * taxPercent / 100); assigned += s.tax; });
+    const ranked = [...taxable].sort((a,b) => (b.subtotal * taxPercent % 100) - (a.subtotal * taxPercent % 100));
     for (let i = 0; i < tax - assigned; i++) ranked[i].tax++;
     services.forEach(s => { s.total = s.complete ? s.subtotal + s.tax : null; });
     return { services, subtotal, tax, total: subtotal + tax, complete: services.length > 0 && services.every(s => s.complete) };
   }
-  const api = { sizeOf, groomingItems, needsCoat, servicePrice, calculate };
+  const api = { sizeOf, groomingItems, needsCoat, servicePrice, calculate, totalize };
   g.PetDoctorPricing = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(globalThis);

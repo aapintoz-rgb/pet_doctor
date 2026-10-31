@@ -1,0 +1,3 @@
+# Preservar BOM/CRLF de los CSV y bytes versionados/huellas del sitio autónomo.
+examples/*.csv -text whitespace=cr-at-eol
+analitica/** -text whitespace=cr-at-eol

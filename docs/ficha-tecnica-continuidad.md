@@ -128,3 +128,59 @@ Cambios de n8n a cargo del usuario: docs/correo-n8n.md incluye instrucciones y c
 ## Publicación de correo solicitada — 30 de octubre de 2026
 
 El usuario solicita subir la entrega porque está fuera de su PC. Se publica el formulario de correo de 360 caracteres, validaciones y guía docs/correo-n8n.md en main/GitHub Pages. 95 pruebas aprobadas, ninguna omitida. Se conservan la conexión única, clave solo en memoria y rama de llamada. Ninguna clave, credencial real ni backup de clientes se incluye. El usuario debe aplicar los cambios de n8n y realizar la prueba de Gmail; no se envían comunicaciones ni se modifica el workflow remoto durante esta publicación. Las menciones anteriores a entrega solo local corresponden al estado previo a esta solicitud.
+
+
+## Estado vigente: carga masiva CSV — 31 de octubre de 2026, local
+
+Implementadas las tres acciones en Datos y respaldos: plantilla CSV, ejemplo 10 clientes/15 perritos e importación con revisión de 20 filas por página, conteos, errores/avisos por fila/columna y confirmación/cancelación. Capa independiente assets/registry-csv.js: parser entrecomillado UTF-8/BOM, autodetección de coma/punto y coma por cabecera, límites 5 MB y 5.000 registros, normalización y candidato sin escritura. assets/registry-csv-view.js controla la UI y usa App.commit con huella de base para confirmación y reintento. Persistencia y workspace siguen en versión 2.
+
+DNI agrupa dueños; existentes solo se reutilizan si nombre/correo NFC-trim y dígitos de teléfono coinciden. IDs de cliente cruzados son conflicto. Perrito con ID existente idéntico se omite; diferencias bloquean. Sin ID, nombre homónimo del mismo dueño es ambiguo y bloquea; con IDs distintos se admite y avisa. Toda validación falla sin aplicar registros parciales. IDs nuevos se preparan una vez y se conservan hasta confirmar/reintentar. Sin novedades, Confirmar deshabilitado. Cambios locales/eventos de almacenamiento invalidan la revisión; el store también rechaza otra pestaña sin evento. Mantiene candidato pendiente y respaldo ante cuota/bloqueo.
+
+Plantilla y ejemplo guardados en examples/clientes-perritos-plantilla.csv y examples/clientes-perritos-ejemplo-10.csv. Ejemplo: cinco clientes con uno y cinco con dos perritos; IDs csv-demo estables, nombres ficticios, DNI de prueba 00000001–00000010, teléfonos sintéticos no autorizados y correos example.com. UTF-8 BOM, semicolon, CRLF; artefacto tabular verificado y comparación exacta con descarga de UI. No se publican bases reales ni se hacen llamadas/envíos.
+
+113 pruebas aprobadas, 0 fallidas, 0 omitidas (95 previas y 18 nuevas: 10 capa CSV y 8 DOM). Incluyen recarga, idempotencia, CSV corrupto/Unicode/comillas/saltos, conflictos, tamaños, paginación, cuotas/reintento, carreras de lectura, cambio de base y conservación de cotización/historial. Guía: docs/carga-clientes-perritos-csv.md. Revisión visual real 360/768/1440 pendiente; DOM no certifica geometría.
+
+Esta entrega CSV queda LOCAL, sin commit/push ni publicación ni modificación de n8n. La importación JSON y exportación CSV de atenciones continúan; importación masiva de atenciones pendiente de siguiente tarea. Las notas históricas que excluyen toda importación CSV quedan sustituidas por esta entrega.
+
+
+## Corrección del layout del cotizador — 31 de octubre de 2026, local
+
+Una regla de assets/application.css aplicaba width:100%, min-height:48px y margin-top:8px a todos los inputs de app-main, incluyendo radios y checkboxes. En las tarjetas flex del cotizador ocupaban el ancho disponible y desplazaban el texto. Se limita esa regla a campos que no sean checkbox/radio/file, también en diálogos; los controles de elección recuperan sus tamaños de 16/19 px y sus márgenes originales. No se cambian tarifas ni datos ni el layout de la carga CSV.
+
+114 pruebas aprobadas sin fallos ni omitidas. Nueva regresión de estilos computados con todas las hojas CSS en orden: inclusión, opciones, adicionales, segmentos y selector de peso conservan ancho compacto, sin altura mínima 48 ni margen 8; el buscador conserva width 100% y min-height 48. Estas comprobaciones no sustituyen revisión geométrica/visual completa del navegador, que sigue pendiente. Corrección aplicada a la copia local, sin publicar.
+
+
+## Ajuste adicional a partir de captura del usuario — 31 de octubre de 2026
+
+La captura mostraba radios/casillas grandes y texto reducido a una columna vertical, compatible con dimensiones de campo de texto aún activas. Se añade assets/quote-controls.css al final de las hojas del documento. Fija ancho, alto, mínimos, máximos y base flex de controles dentro de #quote-module (16/19 px), y reserva espacio flexible para textos de tarjetas e inclusión. La hoja nueva y su especificidad evitan depender de que se haya renovado application.css en caché.
+
+Regresión ampliada: se inyecta después de todas las hojas una regla antigua .app-main input con width 100%, min-height 48 y margen 8; los controles mantienen dimensiones/base flex compactas y los textos flex-grow 1. Verificación de estilos computados y regresiones aprobadas. La inspección directa de la pestaña file:// fue bloqueada por la política del navegador; no se intentó eludirla. No se certifica revisión visual real. Cambios locales, sin publicar.
+
+
+## Estado vigente: 25 clientes, 45 perritos y 150 atenciones CSV — 31 de octubre de 2026, LOCAL
+
+Ampliado botón/archivo de clientes a 25/45 conservando intactos los 10/15 originales; legacy example() y archivo 10 siguen compatibles, example25() genera el nuevo. Añadida carga histórica de atenciones: 150 registros/200 filas, 100 atenciones con un servicio y 50 con dos; primeros 15 perritos tienen cuatro y siguientes 30 tres. Periodo 22/08/2026–30/10/2026, IDs csv-demo estables. Nuevos CSV en examples/clientes-perritos-ejemplo-25.csv, atenciones-ejemplo-150.csv y atenciones-plantilla.csv. Total de ejemplo 2.134.679 céntimos PEN. Archivos producidos mediante artefacto tabular y contrastados con sus generadores de descarga.
+
+assets/attention-csv.js valida/grupa por atención, exige vínculo existente y dueño completo, fechas y horas estrictas en America/Lima, servicios/configuraciones/datos tarifarios. Acepta importes históricos, ajuste de desglose, cero con aviso y controles exactos. Parser parametrizado en registry-csv.js, vista compartida registry-csv-view.js con prefijos únicos y scopes csv/attention-csv. pricing.totalize() extrae la conciliación/IGV usada por calculate(), con comprobación de rango seguro; regresiones de tarifas intactas. Sin migración, workspace sigue v2. No modifica registros de perritos, no crea cotizaciones independientes ni recalcula precios históricos al consultar.
+
+IDs de atención existentes coincidentes se omiten; se conservan datos/precios omitidos de sus snapshots. Cualquier diferencia explícita bloquea, sin actualizar. Revisión de 20 filas, conteo/total de nuevas, errores y avisos con ID. Huella de base y store protegen contra cambios entre revisión/confirmación/reintento. Persistencia completa, candidato pendiente ante error y respaldo diferenciado. Se conservan cotización y filtros; fichas/historial se actualizan por IDs.
+
+132 pruebas aprobadas, 0 fallidas, 0 omitidas: 114 anteriores + 12 atención CSV + 6 DOM. Verificados archivos 25/45/150/200, ampliación desde 10/15, fechas al cruzar medianoche, vínculos, configuraciones, moneda/céntimos/IGV, precios omitidos y ajustes/cero, idempotencia/snapshots, límite 10.000, errores/rollback, paginación, reintento y conservación de cotización. Guía completa docs/carga-atenciones-csv.md. Revisión geométrica real 360/768/1440 pendiente por bloqueo de acceso file://; sin eludirlo.
+
+Entrega exclusivamente local, sin commit/push/publicación ni modificación de n8n ni comunicaciones. La publicación existente sigue en el commit anterior. Las notas históricas que describen importación de atenciones como pendiente quedan sustituidas por este apartado.
+
+## Pet Doctor Analítica — 31/10/2026, entrega LOCAL
+
+Implementado sitio independiente y autocontenido en analitica/, con URL prevista /pet_doctor/analitica/. Almacenamiento propio IndexedDB pet-doctor.analytics, sin lecturas automáticas de localStorage ni configuración n8n. Seis métricas y cinco gráficos ECharts 6.0.0 vendorizados con Apache LICENSE/NOTICE; filtros visibles equivalentes por controles y gráficos, detalle de consulta y CSV por servicio. JSON completo/restauración propia reemplaza tras revisión; CSV incorpora usando los validadores operativos copiados. Validación financiera adicional estricta y transacción completa con revisión entre pestañas, candidato pendiente/backup/reintento. Sin recálculo en consultas.
+
+Demostración exacta 25 clientes, 45 perritos, 150 atenciones, 200 servicios; total con IGV S/ 21.346,79. Sincronización reproducible: scripts/sync-analytics.cjs y manifiesto SHA-256. Guía de métricas, carga y licencias: analitica/README.md. Contratos y continuidad específica: docs/analitica-estado.md.
+
+156 pruebas aprobadas sin fallos ni omitidas: 132 regresiones y 24 nuevas de datos, almacenamiento, gráficos y DOM. Revisión real exclusiva de Analítica en Chrome por HTTP local a 360/768/1440 px, cinco gráficos SVG locales, filtros visibles y sin desbordamiento de página. No sustituye la revisión pendiente del cotizador operativo ni certifica todos los navegadores/lectores de pantalla. IndexedDB y cuota se simularon también en pruebas automatizadas; el navegador real cargó/persistió la demostración.
+
+No se publicó, activó n8n ni hizo commit/push. Conservar cambios operativos previos sin mezclar al publicar: analitica/ es independiente. No hay datos reales cargados en archivos del proyecto. Permanecen límites de un navegador, cuotas variables, sin sincronización ni acceso de producción; importes no equivalen a cobros o utilidades. El CSV de reporte no restaura la base; usar JSON.
+
+## Subida autorizada a GitHub y traspaso — 31/10/2026
+
+El usuario solicita subir todos los cambios pendientes de estas tareas: cargas CSV de clientes/perritos y atenciones, corrección del cotizador, sitio Analítica y documentación. Esta autorización sustituye la restricción temporal de entrega exclusivamente local de los apartados anteriores. Se conserva la rama main y el contenido anterior; no se modifican workflows remotos n8n ni se incluyen bases reales o claves de comunicaciones.
+
+Documento de continuidad completo: docs/traspaso-ia.md (en README usar el enlace relativo correspondiente). Incluye arquitectura, contratos, claves de almacenamiento, IDs ficticios estables, métricas, pruebas, instrucciones de ejecución/publicación y pendientes. Copia entregable fuera del repositorio: outputs/traspaso-ia-pet-doctor.md. Suite final: 156 pruebas aprobadas sin fallos/omisiones. El estado de Pages debe verificarse después de actualizar main; el último commit remoto identifica la revisión publicada.

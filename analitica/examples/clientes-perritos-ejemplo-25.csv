@@ -1,0 +1,46 @@
+﻿cliente_id;cliente_nombre;cliente_dni;cliente_telefono;cliente_correo;perrito_id;perrito_nombre;peso_kg;tamano;pelaje
+csv-demo-cliente-01;Ana Ejemplo;00000001;000000001;cliente1@example.com;csv-demo-perrito-01;Luna;12,5;;corto
+csv-demo-cliente-02;Luis Demostración;00000002;000000002;cliente2@example.com;csv-demo-perrito-02;Toby;;mediano;largo
+csv-demo-cliente-03;María Prueba;00000003;000000003;cliente3@example.com;csv-demo-perrito-03;Nala;;;
+csv-demo-cliente-04;José Modelo;00000004;000000004;cliente4@example.com;csv-demo-perrito-04;Max;12,5;;largo
+csv-demo-cliente-05;Lucía Ensayo;00000005;000000005;cliente5@example.com;csv-demo-perrito-05;Kira;;mediano;corto
+csv-demo-cliente-06;Carlos Ficticio;00000006;000000006;cliente6@example.com;csv-demo-perrito-06;Coco;;;
+csv-demo-cliente-06;Carlos Ficticio;00000006;000000006;cliente6@example.com;csv-demo-perrito-07;Milo;12,5;;corto
+csv-demo-cliente-07;Elena Muestra;00000007;000000007;cliente7@example.com;csv-demo-perrito-08;Lola;;mediano;largo
+csv-demo-cliente-07;Elena Muestra;00000007;000000007;cliente7@example.com;csv-demo-perrito-09;Bruno;;;
+csv-demo-cliente-08;Óscar Ejemplo;00000008;000000008;cliente8@example.com;csv-demo-perrito-10;Nina;12,5;;largo
+csv-demo-cliente-08;Óscar Ejemplo;00000008;000000008;cliente8@example.com;csv-demo-perrito-11;Duna;;mediano;corto
+csv-demo-cliente-09;Sofía Demostración;00000009;000000009;cliente9@example.com;csv-demo-perrito-12;"Pipo ""Chiqui""";;;
+csv-demo-cliente-09;Sofía Demostración;00000009;000000009;cliente9@example.com;csv-demo-perrito-13;Simba;12,5;;corto
+csv-demo-cliente-10;Andrés Prueba;00000010;000000010;cliente10@example.com;csv-demo-perrito-14;Mora;;mediano;largo
+csv-demo-cliente-10;Andrés Prueba;00000010;000000010;cliente10@example.com;csv-demo-perrito-15;Sol;;;
+csv-demo-cliente-11;Beatriz Ejemplo;00000011;000000011;cliente11@example.com;csv-demo-perrito-16;Perrito de prueba 16;12,5;;largo
+csv-demo-cliente-11;Beatriz Ejemplo;00000011;000000011;cliente11@example.com;csv-demo-perrito-17;Perrito de prueba 17;;mediano;corto
+csv-demo-cliente-12;Diego Ejemplo;00000012;000000012;cliente12@example.com;csv-demo-perrito-18;Perrito de prueba 18;;;
+csv-demo-cliente-12;Diego Ejemplo;00000012;000000012;cliente12@example.com;csv-demo-perrito-19;Perrito de prueba 19;12,5;;corto
+csv-demo-cliente-13;Inés Ejemplo;00000013;000000013;cliente13@example.com;csv-demo-perrito-20;Perrito de prueba 20;;mediano;largo
+csv-demo-cliente-13;Inés Ejemplo;00000013;000000013;cliente13@example.com;csv-demo-perrito-21;Perrito de prueba 21;;;
+csv-demo-cliente-14;Javier Ejemplo;00000014;000000014;cliente14@example.com;csv-demo-perrito-22;Perrito de prueba 22;12,5;;largo
+csv-demo-cliente-14;Javier Ejemplo;00000014;000000014;cliente14@example.com;csv-demo-perrito-23;Perrito de prueba 23;;mediano;corto
+csv-demo-cliente-15;Paula Ejemplo;00000015;000000015;cliente15@example.com;csv-demo-perrito-24;Perrito de prueba 24;;;
+csv-demo-cliente-15;Paula Ejemplo;00000015;000000015;cliente15@example.com;csv-demo-perrito-25;Perrito de prueba 25;12,5;;corto
+csv-demo-cliente-16;Mateo Ejemplo;00000016;000000016;cliente16@example.com;csv-demo-perrito-26;Perrito de prueba 26;;mediano;largo
+csv-demo-cliente-16;Mateo Ejemplo;00000016;000000016;cliente16@example.com;csv-demo-perrito-27;Perrito de prueba 27;;;
+csv-demo-cliente-17;Rocío Ejemplo;00000017;000000017;cliente17@example.com;csv-demo-perrito-28;Perrito de prueba 28;12,5;;largo
+csv-demo-cliente-17;Rocío Ejemplo;00000017;000000017;cliente17@example.com;csv-demo-perrito-29;Perrito de prueba 29;;mediano;corto
+csv-demo-cliente-18;Gabriel Ejemplo;00000018;000000018;cliente18@example.com;csv-demo-perrito-30;Perrito de prueba 30;;;
+csv-demo-cliente-18;Gabriel Ejemplo;00000018;000000018;cliente18@example.com;csv-demo-perrito-31;Perrito de prueba 31;12,5;;corto
+csv-demo-cliente-19;Valeria Ejemplo;00000019;000000019;cliente19@example.com;csv-demo-perrito-32;Perrito de prueba 32;;mediano;largo
+csv-demo-cliente-19;Valeria Ejemplo;00000019;000000019;cliente19@example.com;csv-demo-perrito-33;Perrito de prueba 33;;;
+csv-demo-cliente-20;Hugo Ejemplo;00000020;000000020;cliente20@example.com;csv-demo-perrito-34;Perrito de prueba 34;12,5;;largo
+csv-demo-cliente-20;Hugo Ejemplo;00000020;000000020;cliente20@example.com;csv-demo-perrito-35;Perrito de prueba 35;;mediano;corto
+csv-demo-cliente-21;Teresa Ejemplo;00000021;000000021;cliente21@example.com;csv-demo-perrito-36;Perrito de prueba 36;;;
+csv-demo-cliente-21;Teresa Ejemplo;00000021;000000021;cliente21@example.com;csv-demo-perrito-37;Perrito de prueba 37;12,5;;corto
+csv-demo-cliente-22;Iván Ejemplo;00000022;000000022;cliente22@example.com;csv-demo-perrito-38;Perrito de prueba 38;;mediano;largo
+csv-demo-cliente-22;Iván Ejemplo;00000022;000000022;cliente22@example.com;csv-demo-perrito-39;Perrito de prueba 39;;;
+csv-demo-cliente-23;Clara Ejemplo;00000023;000000023;cliente23@example.com;csv-demo-perrito-40;Perrito de prueba 40;12,5;;largo
+csv-demo-cliente-23;Clara Ejemplo;00000023;000000023;cliente23@example.com;csv-demo-perrito-41;Perrito de prueba 41;;mediano;corto
+csv-demo-cliente-24;Nicolás Ejemplo;00000024;000000024;cliente24@example.com;csv-demo-perrito-42;Perrito de prueba 42;;;
+csv-demo-cliente-24;Nicolás Ejemplo;00000024;000000024;cliente24@example.com;csv-demo-perrito-43;Perrito de prueba 43;12,5;;corto
+csv-demo-cliente-25;Julia Ejemplo;00000025;000000025;cliente25@example.com;csv-demo-perrito-44;Perrito de prueba 44;;mediano;largo
+csv-demo-cliente-25;Julia Ejemplo;00000025;000000025;cliente25@example.com;csv-demo-perrito-45;Perrito de prueba 45;;;

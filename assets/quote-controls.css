@@ -1,0 +1,49 @@
+/* Controles compactos: no deben heredar las dimensiones de campos de texto. */
+#quote-module input[type=checkbox],
+#quote-module input[type=radio]{
+  appearance:auto;
+  box-sizing:border-box;
+  width:19px;
+  height:19px;
+  min-width:19px;
+  min-height:19px;
+  max-width:19px;
+  max-height:19px;
+  flex:0 0 19px;
+  padding:0;
+  margin:0;
+  align-self:center;
+}
+
+#quote-module .choice-card input[type=radio],
+#quote-module .segment input[type=radio]{
+  width:16px;
+  height:16px;
+  min-width:16px;
+  min-height:16px;
+  max-width:16px;
+  max-height:16px;
+  flex-basis:16px;
+}
+
+#quote-module .choice-card input[type=radio]{
+  align-self:flex-start;
+  margin-top:3px;
+}
+
+#quote-module .choice-card>span{
+  flex:1 1 0%;
+  width:auto;
+  min-width:0;
+}
+
+#quote-module .include-control>span:not(.include-state){
+  flex:1 1 0%;
+  min-width:0;
+}
+
+#quote-module .include-state{
+  flex:0 1 auto;
+  white-space:normal;
+  text-align:right;
+}
