@@ -1,7 +1,8 @@
 (function (g) {
   'use strict';
   const F = g.PetDoctorFiles || require('./files.js');
-  const KEY = 'pet-doctor.workspace.v2', LEGACY_KEY = 'pet-doctor.quotes-master.v1';
+  const D = g.PetDoctorRecords || require('./records.js');
+  const KEY = 'pet-doctor.workspace.v3', PREVIOUS_KEY='pet-doctor.workspace.v2', LEGACY_KEY = 'pet-doctor.quotes-master.v1';
   const fail = message => { throw new Error(message); };
   const clone = value => JSON.parse(JSON.stringify(value));
   const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -12,7 +13,7 @@
   }
   function id(value) { const result = str(value, 'identificador', 100); if (!result) fail('El identificador no puede estar vacío.'); return result; }
   function newId() { return g.crypto?.randomUUID?.() || 'PD-' + Date.now() + '-' + Math.random().toString(36).slice(2, 12); }
-  function empty() { return { type: 'pet-doctor.workspace', version: 2, currency: 'PEN', updatedAt: null, owners: [], pets: [], quotes: [], attentions: [] }; }
+  function empty() { return { type: 'pet-doctor.workspace', version: 3, currency: 'PEN', updatedAt: null, owners: [], pets: [], quotes: [], attentions: [] }; }
   function completeOwner(owner) {
     return !!owner && !!owner.name.trim() && /^\d{8}$/.test(owner.dni) && /^[+\d\s().-]+$/.test(owner.contact) && digits(owner.contact).length >= 7 && digits(owner.contact).length <= 15;
   }
@@ -34,7 +35,7 @@
   }
   function read(source) {
     let value; try { value = JSON.parse(source); } catch { fail('El archivo no contiene un JSON válido.'); }
-    if (!value || value.type !== 'pet-doctor.workspace' || value.version !== 2 || value.currency !== 'PEN') fail('Se necesita una base Pet Doctor versión 2 y moneda PEN.');
+    if (!value || value.type !== 'pet-doctor.workspace' || ![2,3].includes(value.version) || value.currency !== 'PEN') fail('Se necesita una base Pet Doctor versión 2 o 3 y moneda PEN.');
     const records = registry(value);
     const master = F.readQuotesMaster(JSON.stringify({ ...value, type: 'pet-doctor.quotes-master', version: 1 }));
     const clean = { ...empty(), ...records, quotes: master.quotes, attentions: master.attentions, updatedAt: master.updatedAt };
@@ -75,7 +76,7 @@
   }
   function mergeRegistry(workspace, source) {
     let value; try { value = JSON.parse(source); } catch { fail('El archivo no contiene un JSON válido.'); }
-    if (value?.type !== 'pet-doctor.registry' || value.version !== 1) fail('Se necesita un registro Pet Doctor versión 1.');
+    if (value?.type !== 'pet-doctor.registry' || ![1,2].includes(value.version)) fail('Se necesita un registro Pet Doctor versión 1 o 2.');
     const incoming = registry(value), next = clone(workspace);
     for (const owner of incoming.owners) {
       if (next.owners.some(item => item.id === owner.id)) fail('Conflicto de ID de cliente: ' + owner.id + '. No se importó ningún registro.');
@@ -95,9 +96,11 @@
     if (draft.owner.id && !previous) fail('El cliente ya no existe.');
     const addingPets = draft.operation === 'addPets';
     if (addingPets && !previous) fail('Selecciona un cliente existente para agregar perritos.');
-    const owner = addingPets ? { ...previous } : { id: ownerId, name: str(draft.owner.name, 'nombre del cliente'), dni: str(draft.owner.dni, 'DNI', 8), contact: str(draft.owner.contact, 'teléfono'), email: str(draft.owner.email ?? '', 'correo', 254) };
+    const owner = addingPets ? { ...previous } : { id: ownerId, name: str(draft.owner.name, 'nombre del cliente'), dni: str(draft.owner.dni, 'DNI', 8), contact: str(draft.owner.contact, 'teléfono'), email: str(draft.owner.email ?? '', 'correo', 254), district:D.text(draft.owner.district??'','distrito',100) };
     if (!completeOwner(owner)) fail('Completa el nombre, un DNI de 8 dígitos y un teléfono de 7 a 15 dígitos.');
-    if (!addingPets && !validEmail(owner.email)) fail('El correo del cliente es obligatorio y debe ser válido.');
+    const ownerChanged=!previous||['name','dni','contact','email','district'].some(k=>(owner[k]??'')!==(previous[k]??''));
+    if (!addingPets && ownerChanged && !validEmail(owner.email)) fail('El correo del cliente es obligatorio y debe ser válido.');
+    if (!addingPets && ownerChanged && !owner.district) fail('El distrito del cliente es obligatorio.');
     if (next.owners.some(item => item.id !== ownerId && item.dni === owner.dni)) fail('Ese DNI ya pertenece a otro cliente. Búscalo antes de registrar uno nuevo.');
     if (!Array.isArray(draft.pets) || (!previous && draft.pets.length === 0)) fail('Agrega al menos un perrito.');
     const petIds = new Set(), pets = draft.pets.map(item => {
@@ -105,7 +108,10 @@
       if (petIds.has(petId)) fail('Perrito duplicado en el formulario.');
       petIds.add(petId);
       if (item.id && !next.pets.some(pet => pet.id === petId && pet.ownerId === ownerId)) fail('El perrito no pertenece al cliente seleccionado.');
-      const pet = { id: petId, ownerId, name: str(item.name, 'nombre del perrito'), weightKg: item.weightKg ?? null, size: item.size ?? null, coat: item.coat ?? null };
+      const oldPet=next.pets.find(p=>p.id===petId);
+      const pet = { id: petId, ownerId, name: str(item.name, 'nombre del perrito'), weightKg: item.weightKg ?? null, size: item.size ?? null, coat: item.coat ?? null, ...D.petExtras({...item,registeredOn:oldPet?oldPet.registeredOn:item.registeredOn??D.today()}) };
+      const unchanged=oldPet&&JSON.stringify(pet)===JSON.stringify({...oldPet});
+      if(!unchanged)D.requirePet(pet);
       if (!pet.name) fail('Cada perrito necesita un nombre.');
       if (pet.weightKg !== null && pet.size !== null) fail('Elige peso exacto o rango, no ambos.');
       return pet;
@@ -125,7 +131,12 @@
     snapshot.pet.name = selected.pet.name; snapshot.pet.ownerName = selected.owner.name; snapshot.pet.contact = selected.owner.contact;
     const attention = F.makeAttention(snapshot, meta, previous?.performedAt, next);
     attention.registration = { ownerId: selected.owner.id, petId: selected.pet.id };
-    attention.ownerSnapshot = clone(selected.owner);
+    attention.ownerSnapshot = previous ? previous.ownerSnapshot && clone(previous.ownerSnapshot) : clone(selected.owner);
+    if(attention.ownerSnapshot===undefined)delete attention.ownerSnapshot;
+    attention.petSnapshot = previous ? previous.petSnapshot && clone(previous.petSnapshot) : D.snapshot(selected.pet,D.today(new Date(attention.performedAt)));
+    if(attention.petSnapshot===undefined)delete attention.petSnapshot;
+    attention.observations = D.text(meta.observations??previous?.observations??'','observaciones',2000);
+    if(previous){for(const k of ['name','ownerName','contact'])attention.quote.state.pet[k]=previous.quote.state.pet[k];}
     const index = next.attentions.findIndex(item => item.id === attention.id);
     if (index >= 0) next.attentions[index] = attention;
     else { if (next.attentions.length >= 10000) fail('La base admite hasta 10 000 atenciones.'); next.attentions.push(attention); }
@@ -133,22 +144,24 @@
     return read(JSON.stringify(next));
   }
   function createStore(storage) {
-    let current = empty(), error = '', expected = null, damaged = false;
+    let current = empty(), error = '', expected = null, damaged = false,sourceKey=null,sourceValue=null,migrating=false;
     try {
       expected = storage.getItem(KEY);
       if (expected) current = read(expected);
       else {
-        const old = storage.getItem(LEGACY_KEY);
-        if (old) { current = migrate(old); storage.setItem(KEY, JSON.stringify(current)); expected = JSON.stringify(current); }
+        sourceKey=storage.getItem(PREVIOUS_KEY)?PREVIOUS_KEY:LEGACY_KEY;sourceValue=storage.getItem(sourceKey);
+        if (sourceValue) { current = readBackup(sourceValue);migrating=true; storage.setItem(KEY, JSON.stringify(current)); expected = JSON.stringify(current); }
       }
-    } catch (err) { error = 'No se pudo abrir o migrar la base local: ' + err.message + ' La base anterior se conserva. Puedes cargar un respaldo.'; damaged = !!expected; }
+    } catch (err) { error = 'No se pudo abrir o migrar la base local: ' + err.message + ' La base anterior se conserva. Puedes cargar un respaldo.'; damaged = !migrating&&!!(expected||sourceValue); }
     return {
       get: () => clone(current), error: () => error,
+      migrationPending:()=>migrating&&!expected,
       commit(candidate, { replace = false } = {}) {
         const clean = read(JSON.stringify(candidate));
         if (damaged && !replace) fail('La base local no se pudo leer. Carga un respaldo antes de sobrescribirla.');
         let latest;
         try { latest = storage.getItem(KEY); } catch { fail('No se pudo acceder al almacenamiento. Reintenta o descarga el respaldo pendiente.'); }
+        if(!replace&&sourceKey&&!expected&&storage.getItem(sourceKey)!==sourceValue)fail('La base anterior cambió en otra pestaña. Descarga el respaldo pendiente y recarga.');
         if (!replace && latest !== expected) fail('La base cambió en otra pestaña. Descarga el respaldo pendiente y recarga antes de continuar.');
         try { storage.setItem(KEY, JSON.stringify(clean)); } catch { fail('No se pudo guardar en el navegador. Reintenta o descarga el respaldo pendiente.'); }
         expected = JSON.stringify(clean); current = clean; error = ''; damaged = false;
@@ -156,7 +169,8 @@
       },
     };
   }
-  const api = { KEY, LEGACY_KEY, empty, read, readBackup, migrate, completeOwner, validEmail, requireSelection, hasSelection, search, mergeRegistry, saveClient, saveAttention, createStore, newId };
+  function exportRegistry(workspace){const clean=read(JSON.stringify(workspace));return {type:'pet-doctor.registry',version:2,owners:clean.owners,pets:clean.pets};}
+  const api = { KEY, PREVIOUS_KEY, LEGACY_KEY, empty, read, readBackup, migrate, completeOwner, validEmail, requireSelection, hasSelection, search, mergeRegistry, saveClient, saveAttention, createStore, newId, exportRegistry };
   g.PetDoctorWorkspace = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(globalThis);

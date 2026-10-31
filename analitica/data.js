@@ -111,5 +111,6 @@
     return '\ufeff'+[headers,...selection.rows.map(r=>[r.attentionId,r.date,r.time,'America/Lima',r.ownerId||'',r.ownerName,r.petId||'',r.petName,r.serviceCode,r.serviceName,pen(r.subtotal),pen(r.tax),pen(r.total)])].map(row=>row.map(cell).join(';')).join('\r\n')+'\r\n';
   }
   const backup=data=>JSON.stringify({type:'pet-doctor.analytics',version:1,workspace:data.workspace,meta:data.meta},null,2);
-  const api={normalize,validate,dataset,empty,demo,prepare,options,initialFilters,reconcile,query,quickRange,csv,backup,sum};g.PetDoctorAnalyticsData=api;if(typeof module!=='undefined')module.exports=api;
+  async function prepareCsv(text,name,options={}){try{const C=g.PetDoctorAnalyticsCsv||require('./lib/analytics-csv.js');const workspace=await C.read(text,options);if(options.signal?.aborted)throw Error('Carga cancelada.');const candidate=dataset(workspace,{name,demo:false}),rows=normalize(candidate.workspace);return {candidate,mode:'reemplazar',errors:[],warnings:[],canImport:true,counts:{owners:workspace.owners.length,pets:workspace.pets.length,attentions:workspace.attentions.length,services:rows.length,total:sum(rows.map(r=>r.total))}};}catch(e){if(options.signal?.aborted)throw e;return {candidate:null,mode:'reemplazar',canImport:false,errors:[{line:0,column:'archivo',message:e.message}],warnings:[]};}}
+  const api={normalize,validate,dataset,empty,demo,prepare,prepareCsv,options,initialFilters,reconcile,query,quickRange,csv,backup,sum};g.PetDoctorAnalyticsData=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);

@@ -1,7 +1,7 @@
 (function (g) {
   'use strict';
   const ZONE = 'America/Lima';
-  const HEADERS = ['atencion_id','fecha_atencion','hora_atencion','zona_horaria','cliente_id','cliente_nombre','cliente_dni','cliente_telefono','perrito_id','perrito_nombre','servicios','subtotal_pen','igv_pen','total_pen','moneda','estado','vinculo_registrado'];
+  const HEADERS = ['atencion_id','fecha_atencion','hora_atencion','zona_horaria','cliente_id','cliente_nombre','cliente_dni','cliente_telefono','perrito_id','perrito_nombre','servicios','subtotal_pen','igv_pen','total_pen','moneda','estado','vinculo_registrado','cliente_distrito','especie','raza','sexo','edad_anios','edad_meses','nacimiento_estimado','observaciones'];
   const formatter = new Intl.DateTimeFormat('en-GB', { timeZone: ZONE, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
   const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   function dateParts(value) {
@@ -24,6 +24,7 @@
         ownerId: attention.registration?.ownerId || pet.ownerId || '', ownerName: owner.name ?? pet.ownerName ?? '',
         dni: owner.dni ?? '', contact: owner.contact ?? pet.contact ?? '',
         petId: attention.registration?.petId || pet.petId || '', petName: pet.name || '',
+        district:owner.district||'',petSnapshot:attention.petSnapshot||null,observations:attention.observations||'',
         services: serviceDetails.map(service => service.name), serviceDetails,
         subtotal: attention.quote.pricing.subtotal, tax: attention.quote.pricing.tax, total: attention.quote.pricing.total,
         currency: attention.quote.currency || 'PEN', status: attention.status, registered,
@@ -62,7 +63,7 @@
   }
   const amount = cents => (cents / 100).toFixed(2).replace('.', ',');
   function csv(selection) {
-    const content = selection.rows.map(row => [row.id,row.date,row.time,ZONE,row.ownerId,row.ownerName,row.dni,row.contact,row.petId,row.petName,row.services.join(' | '),amount(row.subtotal),amount(row.tax),amount(row.total),row.currency,row.status,row.registered ? 'si' : 'no'].map(csvText).join(';'));
+    const content = selection.rows.map(row => [row.id,row.date,row.time,ZONE,row.ownerId,row.ownerName,row.dni,row.contact,row.petId,row.petName,row.services.join(' | '),amount(row.subtotal),amount(row.tax),amount(row.total),row.currency,row.status,row.registered ? 'si' : 'no',row.district,row.petSnapshot?.species==='canine'?'canino':'',row.petSnapshot?.breed||'',row.petSnapshot?.sex||'',row.petSnapshot?.ageAtAttention?.years??'',row.petSnapshot?.ageAtAttention?.months??'',row.petSnapshot?.ageReference?.estimatedBirthDate||'',row.observations].map(csvText).join(';'));
     return '\uFEFF' + HEADERS.join(';') + '\r\n' + (content.length ? content.join('\r\n') + '\r\n' : '');
   }
   function filename(now = new Date()) { return 'pet-doctor-atenciones-' + dateParts(now).date + '.csv'; }

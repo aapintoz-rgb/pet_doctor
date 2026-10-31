@@ -26,16 +26,16 @@
   root.classList.add('quote-root');
   root.innerHTML = `
     <section class="quote-intro"><div><span class="section-tag">UN POCO DE PLANIFICACIÓN, MUCHO CARIÑO</span><h1>Cotiza sus cuidados<span>.</span></h1><p>Elige sus servicios. Nosotros hacemos las cuentas.</p><span class="academic-badge">Tarifas académicas · Sin registro previo</span></div><img src="${asset('guarderia')}" alt="" width="280" height="190" class="intro-illustration"></section>
-    <div class="quote-toolbar"><p class="field-hint">PDF libre · Atenciones vinculadas a un cliente y su perrito</p><div class="file-tools"><button type="button" id="import-quote" class="text-button">↑ Cargar cotización</button><button type="button" id="new-quote" class="text-button">＋ Nueva</button></div></div>
+    <div class="quote-toolbar"><p class="field-hint">PDF libre · Atenciones vinculadas a un cliente y su perrito</p><div class="file-tools"><button type="button" id="new-quote" class="text-button">＋ Nueva</button></div></div>
     ${window.PetDoctorClients.markup}
     <section id="pet-fields" class="pet-fields" aria-label="Datos compartidos de la mascota"></section>
     <div class="quote-layout"><section class="service-workspace" aria-label="Configurar servicios"><div class="service-tabs" role="tablist" aria-label="Servicios">${Object.entries(C.services).map(([id,s],i) => `<button type="button" id="tab-${id}" class="service-tab" role="tab" aria-controls="service-panel" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}" data-tab="${id}"><img src="${asset(id)}" alt="" width="100" height="78" ${i ? 'loading="lazy"' : ''}><span>${s.short}</span><small class="tab-check" aria-label="Incluido" hidden>✓</small></button>`).join('')}</div><section id="service-panel" role="tabpanel" aria-labelledby="tab-consulta" tabindex="0"></section></section>
     <aside id="summary" class="quote-summary" aria-labelledby="summary-title"></aside></div>
+    <details class="attention-notes"><summary>Datos de la atención · observaciones opcionales</summary><p id="attention-date" class="field-hint"></p><label for="attention-observations">Observaciones de esta atención<textarea id="attention-observations" rows="3" maxlength="2000"></textarea></label><p class="field-hint">Se guardan con la atención. No se incluyen en la cotización PDF.</p></details>
     ${window.PetDoctorHistoryView.markup}
     <p class="quote-footer">Hecho para cuidar mejor. <span>Pet Doctor · Cotización académica en soles</span></p>
     <div class="mobile-total"><div><small id="mobile-total-label">Total con IGV</small><strong id="mobile-total-value">${money(0)}</strong></div><button type="button" id="open-detail" class="primary-button">Ver detalle ↑</button></div>
     <dialog id="summary-dialog" aria-labelledby="mobile-summary-title"><div class="dialog-heading"><h2 id="mobile-summary-title">Tu cotización</h2><button type="button" id="close-detail" class="secondary-button">Cerrar ✕</button></div><div id="mobile-summary-body"></div></dialog>
-    <input type="file" id="quote-file" accept=".json,application/json" hidden>
     <div id="price-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>`;
   const el = id => document.getElementById(id);
   let announceTimer;
@@ -94,6 +94,8 @@
   }
   function summaries() {
     const result = P.calculate(state);
+    const saved=quotesMaster.attentions.find(a=>a.id===meta.id);
+    el('attention-date').textContent=saved?'Fecha de atención · Lima: '+new Date(saved.performedAt).toLocaleString('es-PE',{timeZone:'America/Lima'}):'Fecha de atención · Lima: se registra automáticamente al guardar ('+window.PetDoctorRecords.today()+').';
     for (const [id,mobile] of [['summary',false],['mobile-summary-body',true]]) {
       const container = el(id);
       const openServices = [...container.querySelectorAll('.summary-service[open]')].map(n=>n.querySelector('[data-edit]').dataset.edit);
@@ -145,6 +147,7 @@
   });
   root.addEventListener('input', event => {
     const node=event.target;
+    if(node.id==='attention-observations'){clearPending('attention');dirty=true;root.querySelectorAll('.unsaved-indicator').forEach(n=>{n.textContent='● Cambios sin guardar';n.classList.remove('saved');});}
     if(node.dataset.field==='pet.weightKg') { state.pet.weightKg=node.value==='' ? null : Number(node.value); refresh('pet.weightKg'); }
     if(node.dataset.identity) {
       clearPending('attention');
@@ -168,28 +171,8 @@
     event.preventDefault();switchTab(ids[next],true);
   });
   function canReplace() { return !dirty || window.confirm('Hay cambios sin guardar. ¿Quieres reemplazarlos?'); }
-  function resetQuote(){state=window.PetDoctorDefaults();meta=newMeta();dirty=false;active='consulta';el('client-search').value='';renderAll();}
+  function resetQuote(){state=window.PetDoctorDefaults();meta=newMeta();dirty=false;active='consulta';el('client-search').value='';el('attention-observations').value='';renderAll();}
   el('new-quote').addEventListener('click',()=>{if(!canReplace() || !clearPending())return;resetQuote();message('Nueva cotización lista.');});
-  el('import-quote').addEventListener('click',()=>el('quote-file').click());
-  async function readFile(input,kind) {
-    const file=input.files[0];input.value='';if(!file)return;
-    try {
-      if(file.size>20*1024*1024)throw new Error('El archivo supera el límite de 20 MB.');
-      if(App.hasPending())throw new Error('Resuelve o descarta el guardado pendiente antes de cargar archivos.');
-      const source=await file.text();
-      if(kind==='quote') {
-        const loaded=F.readQuote(source);
-        if(!canReplace())return;
-        state=loaded.state;meta={id:loaded.id,createdAt:loaded.createdAt};dirty=false;
-        const current=P.calculate(state);
-        if(loaded.pricingVersion!==C.version || loaded.previousTotal!==current.total) {
-          importedNotice='La cotización se recalculó con las tarifas actuales. Total guardado: '+money(loaded.previousTotal)+'. Total actual'+(current.complete?'': ' parcial')+': '+money(current.total)+'.';dirty=true;
-        } else importedNotice='Cotización recuperada. Los importes se verificaron con el tarifario actual.';
-        renderAll();message(importedNotice);
-      }
-    }catch(error){message(error.message,true);}
-  }
-  el('quote-file').addEventListener('change',()=>readFile(el('quote-file'),'quote'));
   function isLocked(){return quotesMaster.attentions.some(a=>a.id===meta.id);}
   function selectClient(ownerId,petId,fromEdit=false){
     const saved=quotesMaster.attentions.find(a=>a.id===meta.id);
@@ -215,7 +198,7 @@
   }
   function saveAttention(){
     try {
-      const candidate=W.saveAttention(quotesMaster,state,meta);
+      const candidate=W.saveAttention(quotesMaster,state,{...meta,observations:el('attention-observations').value});
       commit(candidate,()=>{dirty=false;renderAll();message('Atención guardada como realizada y vinculada a su cliente y perrito. Usa «Descargar base» para respaldarla.');},'attention');
     } catch(error) { message(error.message,true); }
   }

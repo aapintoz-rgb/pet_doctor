@@ -6,15 +6,56 @@ const W = require('../assets/workspace.js');
 let JSDOM;
 try { ({ JSDOM } = require('jsdom')); } catch { /* Dependencia opcional de desarrollo, no de la aplicación. */ }
 const uiTest = (name, fn) => test(name, { skip: !JSDOM && 'Instala jsdom y expón su carpeta mediante NODE_PATH para las pruebas de interfaz.' }, fn);
+
+uiTest('Archivos: inventario único y ubicación por módulo sin controles obsoletos',()=>{
+ const a=app();for(const id of ['import-quote','quote-file','export-registry','import-registry','registry-file','csv-template','csv-example','attention-csv-template','attention-csv-example','retry-client-save','backup-client-draft','data-pending'])assert.equal(a.el('#'+id),null,id);
+ assert.equal(a.el('#csv-open').closest('section#clients-module')?.id,'clients-module');assert.equal(a.el('#attention-csv-open').closest('#data-dialog')?.id,'data-dialog');assert.equal(a.el('#export-analytics').closest('#data-dialog')?.id,'data-dialog');assert.equal(a.el('#download-pending').closest('#data-dialog')?.id,'data-dialog');assert.equal(a.el('#data-dialog').tagName,'SECTION');assert.equal(a.el('#export-analytics').disabled,true);assert.ok(a.el('#history-csv'));assert.ok(a.el('.download-quote'));a.cleanup();
+});
+uiTest('Archivos: exportación analítica usa todo lo guardado y navegar conserva cotización y filtros',async()=>{
+ const R=require('../assets/registry-csv'),A=require('../assets/attention-csv'),C=require('../assets/analytics-csv'),initial=A.prepare(R.prepare(W.empty(),R.example25()).candidate,A.example()).candidate,a=app({initial});
+ a.click('#nav-quote');a.selectService();a.fill('#history-search','sin coincidencias');a.fill('#attention-observations','Pendiente sin guardar');a.click('#open-data');assert.equal(a.el('#data-dialog').hidden,false);assert.equal(a.el('#quote-module').hidden,true);a.click('#export-analytics');assert.match(a.downloads.at(-1).name,/pet-doctor-analitica-/);const csv=await a.downloadText();const loaded=await C.read(csv);assert.equal(loaded.attentions.length,150);assert.ok(!csv.includes('Pendiente sin guardar'));a.click('#close-data');assert.equal(a.el('#quote-module').hidden,false);assert.equal(a.el('#history-search').value,'sin coincidencias');assert.equal(a.el('#attention-observations').value,'Pendiente sin guardar');a.cleanup();
+});
+
+uiTest('Registro v3: campos ampliados obligatorios sin peso, persistencia y ficha',()=>{
+  const a=app();a.click('#directory-new');a.fillOwner();a.fill('[data-pet-key="name"]','Luna');
+  a.el('#client-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));
+  assert.equal(a.data.size,0);assert.match(a.el('#client-form-error').textContent,/raza/);
+  a.fill('[data-pet-key="breed"]','Mestizo');a.fill('[data-pet-key="sex"]','undetermined','change');a.fill('[data-pet-key="ageYears"]','0');a.fill('[data-pet-key="ageMonths"]','0');
+  a.el('#client-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));
+  const ws=a.master();assert.equal(ws.version,3);assert.equal(ws.pets[0].weightKg,null);assert.equal(ws.pets[0].sex,'undetermined');assert.equal(ws.owners[0].district,'Surco');assert.match(a.el('#profile-card').textContent,/Canino.*Mestizo/);assert.match(a.el('#profile-card').textContent,/Nacimiento estimado/);a.cleanup();
+});
+uiTest('Registro v3: editar nombre no cambia nacimiento y corregir edad sí',()=>{
+  const r=fixture(),a=app({initial:r.workspace}),before=a.master().pets[0].ageReference;
+  a.click('[data-profile-id]');a.click('#profile-edit');a.fill('[data-pet-key="name"]','Luna nueva');a.submit();assert.deepEqual(a.master().pets[0].ageReference,before);
+  a.click('#profile-edit');const checkbox=a.el('[data-pet-key="correctAge"]');checkbox.checked=true;checkbox.dispatchEvent(new a.w.Event('change',{bubbles:true}));
+  a.fill('[data-pet-key="ageYears"]','6');a.fill('[data-pet-key="ageMonths"]','0');a.submit();assert.notEqual(a.master().pets[0].ageReference.estimatedBirthDate,before.estimatedBirthDate);a.cleanup();
+});
+uiTest('Registro v3: observaciones conservadas entre módulos y detalle histórico',()=>{
+  const r=fixture(),a=app({initial:r.workspace});a.selectFixture(r);a.selectService();a.fill('#attention-observations','Control\nSin incidencias');a.click('#nav-clients');a.click('#nav-quote');assert.equal(a.el('#attention-observations').value,'Control\nSin incidencias');
+  a.click('.save-attention');assert.equal(a.master().attentions[0].observations,'Control\nSin incidencias');a.click('[data-history-id]');assert.match(a.el('#history-detail-body').textContent,/Surco/);assert.match(a.el('#history-detail-body').textContent,/Sin incidencias/);assert.match(a.el('#attention-date').textContent,/Lima/);a.click('#history-close-detail');a.click('#new-quote');assert.equal(a.el('#attention-observations').value,'');a.cleanup();
+});
+uiTest('Datos: JSON completo preserva todos los atributos y registro independiente retirado',async()=>{
+ const r=fixture(),a=app({initial:r.workspace});a.click('#open-data');assert.equal(a.el('#data-dialog').hidden,false);assert.equal(a.el('#export-registry'),null);assert.equal(a.el('#import-registry'),null);a.click('#export-master');const file=await a.backup();assert.equal(file.version,3);assert.equal(file.owners[0].district,'Surco');assert.deepEqual(file.pets[0].ageReference,r.workspace.pets[0].ageReference);a.cleanup();
+});
+uiTest('Registro v3: editar solo al dueño no exige inventar datos del perro anterior',()=>{
+  const r=fixture();for(const p of r.workspace.pets){p.breed='';p.sex=null;p.ageReference=null;p.registeredOn=null;}r.workspace.owners[0].district='';
+  const a=app({initial:r.workspace});a.click('[data-profile-id]');a.click('#profile-edit');a.fill('[data-owner-key="district"]','Barranco');
+  a.el('#client-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));assert.equal(a.el('#client-dialog').open,false);assert.equal(a.master().owners[0].district,'Barranco');assert.equal(a.master().pets[0].ageReference,null);a.cleanup();
+});
+uiTest('Registro v3: migración pendiente permite respaldo y reintento sin borrar v2',async()=>{
+  const r=fixture(),old=JSON.stringify({...r.workspace,version:2}),data=new Map([[W.PREVIOUS_KEY,old]]),a=app({data,blocked:true});
+  assert.equal(data.has(W.KEY),false);assert.equal(a.el('#storage-recovery').hidden,false);a.click('#open-data');a.click('#download-pending');const candidate=await a.backup();assert.equal(candidate.version,3);assert.equal(candidate.owners.length,1);a.block(false);a.click('#retry-save');assert.equal(a.master().version,3);assert.equal(data.get(W.PREVIOUS_KEY),old);a.cleanup();
+});
 const root = path.resolve(__dirname, '..');
-const owner = { name: 'Ana Pérez', dni: '00123456', contact: '+51 999 123 456', email:'ana@example.com' };
-const pet = { name: 'Luna', weightKg: 12.5, size: null, coat: 'long' };
+const owner = { name: 'Ana Pérez', dni: '00123456', contact: '+51 999 123 456', email:'ana@example.com', district:'Surco' };
+const pet = { name: 'Luna', weightKg: 12.5, size: null, coat: 'long',breed:'Mestizo',sex:'female',ageReference:require('../assets/records').makeAge(2,3,'2026-08-21') };
 function fixture() { return W.saveClient(W.empty(), { owner, pets: [pet, { ...pet, name: 'Toby', weightKg: null, size: 'small' }] }); }
 function app({ data = new Map(), blocked = false, initial = null } = {}) {
   if (initial) data.set(W.KEY, JSON.stringify(initial));
   const dom = new JSDOM(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), { url: 'https://pet-doctor.test/', runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window, errors = [], downloads = [], confirmations = []; let pdfCalls = 0, deny = false;
   Object.defineProperty(w, 'localStorage', { value: { getItem: key => data.get(key) ?? null, setItem(key, value) { if (blocked) throw Error('quota'); data.set(key, value); }, removeItem(key) { if(blocked)throw Error('blocked');data.delete(key); } } });
+  w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;
   w.confirm = message => { confirmations.push(message); return !deny; };
   w.addEventListener('error', event => { errors.push(event.error); event.preventDefault(); });
   w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
@@ -22,13 +63,19 @@ function app({ data = new Map(), blocked = false, initial = null } = {}) {
   w.URL.createObjectURL = blob => { downloads.push({ blob }); return 'blob:demo'; }; w.URL.revokeObjectURL = () => {};
   w.HTMLAnchorElement.prototype.click = function () { downloads.at(-1).name = this.download; };
   w.PetDoctorPDF = { async createQuotePdf() { pdfCalls++; return new Uint8Array([37,80,68,70]); } };
-  for (const file of ['auth','app','catalog','pricing','files','workspace','integration','registry-csv','registry-csv-view','attention-csv','clients','history','history-view','application','quote','customer-profile']) w.eval(fs.readFileSync(path.join(root, 'assets', file + '.js'), 'utf8'));
+  for (const file of ['auth','app','catalog','pricing','records','files','workspace','integration','registry-csv','registry-csv-view','attention-csv','clients','history','history-view','analytics-csv','application','quote','email-templates','customer-profile']) w.eval(fs.readFileSync(path.join(root, 'assets', file + '.js'), 'utf8'));
   const el = selector => w.document.querySelector(selector);
   function fill(selector, value, event = 'input') { const input = el(selector); assert.ok(input, selector); input.value = value; input.dispatchEvent(new w.Event(event, { bubbles: true })); }
   function click(selector) { const element = el(selector); assert.ok(element, selector); element.click(); }
-  function submit() { el('#client-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true })); }
+  function submit() {
+    // Los fixtures de alta completan los nuevos obligatorios; las pruebas v3 validan su ausencia por separado.
+    for(const fieldset of w.document.querySelectorAll('[data-draft-index]'))if(fieldset.querySelector('[data-pet-key="name"]').value){
+      for(const [key,value]of [['breed','Mestizo'],['sex','female'],['ageYears','2'],['ageMonths','3']]){const input=fieldset.querySelector('[data-pet-key="'+key+'"]');if(!input.disabled&&!input.value){input.value=value;input.dispatchEvent(new w.Event('input',{bubbles:true}));}}
+    }
+    el('#client-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  }
   function selectService() { const checkbox = el('[data-field="consulta.included"]'); checkbox.checked = true; checkbox.dispatchEvent(new w.Event('change', { bubbles: true })); }
-  function fillOwner() { fill('[data-owner-key="name"]', owner.name); fill('[data-owner-key="dni"]', owner.dni); fill('[data-owner-key="contact"]', owner.contact); fill('[data-owner-key="email"]',owner.email); }
+  function fillOwner() { fill('[data-owner-key="name"]', owner.name); fill('[data-owner-key="dni"]', owner.dni); fill('[data-owner-key="contact"]', owner.contact); fill('[data-owner-key="email"]',owner.email);fill('[data-owner-key="district"]',owner.district); }
   function selectFixture(result = fixture()) { fill('#owner-select', result.ownerId, 'change'); fill('#pet-select', result.petId, 'change'); }
   function master() { return W.read(data.get(W.KEY)); }
   async function downloadText(index = downloads.length - 1) { const reader = new w.FileReader(); return await new Promise((resolve,reject) => { reader.onload=()=>resolve(reader.result); reader.onerror=reject; reader.readAsText(downloads[index].blob); }); }
@@ -72,8 +119,8 @@ uiTest('Registro fallido no aplica nada: respalda candidato y reintenta completo
   const a=app({blocked:true});a.click('#new-client');a.fillOwner();a.fill('[data-pet-key="name"]','Luna');a.submit();
   assert.equal(a.data.size,0);assert.equal(a.el('#client-dialog').open,true);assert.equal(a.el('#owner-select').options.length,1);
   assert.match(a.el('#client-form-error').textContent,/No se pudo guardar/);assert.equal(a.el('[data-owner-key="dni"]').value,'00123456');
-  a.click('#backup-client-draft');const backup=await a.backup();assert.equal(backup.owners.length,1);assert.equal(backup.pets.length,1);assert.match(a.downloads[0].name,/pendiente/);
-  a.block(false);a.click('#retry-client-save');assert.equal(a.master().owners.length,1);assert.equal(a.el('#client-dialog').open,false);a.cleanup();
+  a.click('#client-recovery-link');a.click('#download-pending');const backup=await a.backup();assert.equal(backup.owners.length,1);assert.equal(backup.pets.length,1);assert.match(a.downloads[0].name,/pendiente/);
+  a.block(false);a.click('#retry-save');assert.equal(a.master().owners.length,1);assert.equal(a.el('#client-dialog').open,false);a.cleanup();
 });
 
 uiTest('Buscador no elige automáticamente; coincidencia por perrito selecciona dueño y perrito', () => {
@@ -130,14 +177,8 @@ uiTest('Peso y rango del registro son opcionales, excluyentes y los cambios del 
   a.click('[data-tab="grooming"]');a.fill('#weight-input','30');assert.equal(a.master().pets[0].weightKg,12.5);a.cleanup();
 });
 
-uiTest('Importar registro incorpora incompletos; respaldo completo pide confirmación y valida antes de reemplazar', async () => {
-  const a=app(),legacy={type:'pet-doctor.registry',version:1,owners:[{id:'o1',name:'Ana'}],pets:[{id:'p1',ownerId:'o1',name:'Luna'}]};
-  await a.importFile('registry',legacy);a.fill('#owner-select','o1','change');a.fill('#pet-select','p1','change');a.selectService();assert.equal(a.el('.save-attention').disabled,true);assert.match(a.el('#client-selection-status').textContent,/incompleto/);
-  a.click('#edit-client');a.fill('[data-owner-key="dni"]',owner.dni);a.fill('[data-owner-key="contact"]',owner.contact);a.fill('[data-owner-key="email"]',owner.email);a.submit();assert.equal(a.el('.save-attention').disabled,false);
-  const before=a.data.get(W.KEY);await a.importFile('registry',legacy);assert.equal(a.data.get(W.KEY),before);assert.match(a.el('#file-message').textContent,/Conflicto/);
-  a.deny(true);await a.importFile('master',W.empty());assert.equal(a.data.get(W.KEY),before);assert.ok(a.confirmations.length>0);
-  a.deny(false);await a.importFile('master',{...W.empty(),pets:[{id:'x',ownerId:'missing',name:'X'}]});assert.equal(a.data.get(W.KEY),before);
-  await a.importFile('master',W.empty());assert.equal(a.master().owners.length,0);a.cleanup();
+uiTest('Datos: JSON completo requiere confirmación y rechaza archivos inválidos sin pérdida',async()=>{
+ const r=fixture(),a=app({initial:r.workspace}),before=a.data.get(W.KEY);a.deny(true);await a.importFile('master',W.empty());assert.equal(a.data.get(W.KEY),before);a.deny(false);await a.importFile('master',{...W.empty(),pets:[{id:'x',ownerId:'missing',name:'X'}]});assert.equal(a.data.get(W.KEY),before);await a.importFile('master',W.empty());assert.equal(a.master().owners.length,0);a.cleanup();
 });
 
 function historyFixture(count=1) {
@@ -184,7 +225,7 @@ uiTest('Solo guardados exitosos aparecen; actualizar conserva fecha sin duplicar
 
 uiTest('Historial vacío y registros sin vínculo; cargar una base refresca preservando filtros',async()=>{
   const a=app();assert.equal(a.el('#history-empty').hidden,false);assert.match(a.el('#history-empty').textContent,/Todavía no hay/);assert.equal(a.el('#history-csv').disabled,true);
-  const result=historyFixture(),legacy=result.workspace.attentions[0];delete legacy.registration;delete legacy.ownerSnapshot;legacy.quote.state.pet.ownerId=null;legacy.quote.state.pet.petId=null;
+  const result=historyFixture(),legacy=result.workspace.attentions[0];delete legacy.registration;delete legacy.petSnapshot;delete legacy.ownerSnapshot;legacy.quote.state.pet.ownerId=null;legacy.quote.state.pet.petId=null;
   a.el('#attention-history').open=true;a.fill('#history-search','Luna');await a.importFile('master',result.workspace);
   assert.equal(a.el('#attention-history').open,true);assert.equal(a.el('#history-search').value,'Luna');assert.match(a.el('#history-rows').textContent,/Sin vínculo registrado/);assert.match(a.el('#history-rows').textContent,/No registrado/);
   a.fill('#history-owner','unlinked','change');assert.equal(a.el('#history-rows').rows.length,1);a.fill('#history-search','No existe');assert.equal(a.el('#history-csv').disabled,true);assert.match(a.el('#history-empty').textContent,/No hay atenciones/);a.cleanup();
@@ -206,7 +247,7 @@ uiTest('Inicio en Clientes, menú independiente y navegación conserva cotizaci�
 
 uiTest('Ficha y selección del cotizador son independientes y atenciones se relacionan por ID',()=>{
   const result=historyFixture(),other=W.saveClient(result.workspace,{owner:{...owner,dni:'87654321'},pets:[pet]}),legacy=JSON.parse(JSON.stringify(other.workspace.attentions[0]));
-  legacy.id='same-name-legacy';legacy.quote.id=legacy.id;delete legacy.registration;legacy.quote.state.pet.ownerId=null;legacy.quote.state.pet.petId=null;other.workspace.attentions.push(legacy);
+  legacy.id='same-name-legacy';legacy.quote.id=legacy.id;delete legacy.registration;delete legacy.petSnapshot;legacy.quote.state.pet.ownerId=null;legacy.quote.state.pet.petId=null;other.workspace.attentions.push(legacy);
   const a=app({initial:other.workspace});a.selectFixture(result);a.click('[data-profile-id="'+other.ownerId+'"]');
   assert.match(a.el('.profile-stats').textContent,/0Atenciones/);assert.equal(a.el('#owner-select').value,result.ownerId);
   a.click('#profile-back');a.click('[data-profile-id="'+result.ownerId+'"]');assert.match(a.el('.profile-stats').textContent,/1Atenciones/);assert.equal(a.el('#profile-history-rows').rows.length,1);assert.equal(a.w.document.querySelectorAll('#client-dialog').length,1);a.cleanup();
@@ -215,7 +256,7 @@ uiTest('Ficha y selección del cotizador son independientes y atenciones se rela
 uiTest('Cliente anterior sin correo permite atención y agregar perrito; exige correo al editar',()=>{
   const result=fixture();delete result.workspace.owners[0].email;const a=app({initial:result.workspace});a.click('[data-profile-id]');
   assert.match(a.el('.profile-data').textContent,/Correo pendiente/);assert.equal(a.el('#profile-email').disabled,true);a.click('#profile-add-pet');assert.equal(a.el('[data-owner-key="email"]'),null);a.fill('[data-pet-key="name"]','Max');a.submit();assert.equal(a.master().pets.length,3);
-  a.click('#profile-edit');a.submit();assert.match(a.el('#client-form-error').textContent,/correo/);a.click('#cancel-client');
+  a.click('#profile-edit');a.fill('[data-owner-key="name"]','Nombre editado');a.submit();assert.match(a.el('#client-form-error').textContent,/correo/);a.click('#cancel-client');
   a.click('#nav-quote');a.selectFixture(result);a.selectService();assert.equal(a.el('.save-attention').disabled,false);a.click('.save-attention');assert.equal(a.master().attentions.length,1);a.cleanup();
 });
 
@@ -285,10 +326,21 @@ function reviewEmail(a,message='Hola, Ana.',subject='Seguimiento'){
   a.fill('#communication-subject',subject);a.fill('#communication-message',message);
   a.el('#communication-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));
 }
+uiTest('Plantillas de correo: tres opciones, perro vinculado, fecha y texto editable sin enviar',()=>{
+  const f=fixture(),a=app({initial:f.workspace});configureCalls(a);a.click('[data-profile-id]');a.click('#profile-email');let calls=0;a.w.fetch=async()=>{calls++;};
+  assert.equal(a.el('#email-template').options.length,4);a.fill('#email-template','appointment','change');a.click('#email-template-apply');assert.match(a.el('#email-template-status').textContent,/perrito/);
+  a.fill('#email-template-pet',f.petId,'change');a.fill('#email-template-date','2099-11-05');a.fill('#email-template-time','10:30');a.click('#email-template-apply');assert.match(a.el('#communication-message').value,/05\/11\/2099 a las 10:30/);assert.match(a.el('#communication-message').value,/Luna/);
+  a.fill('#communication-message','Texto editado');a.el('#communication-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));assert.equal(a.el('#call-review-message').textContent,'Texto editado');assert.equal(a.el('#email-template').disabled,true);assert.equal(calls,0);a.click('#call-edit');assert.equal(a.el('#email-template').disabled,false);a.click('#communication-close');a.click('#profile-phone');assert.equal(a.el('#email-templates').hidden,true);a.cleanup();
+});
+uiTest('Plantillas: seguimiento sin fecha, revisión inválida tras cambiar datos y reinicio sin persistencia',()=>{
+  const f=fixture(),a=app({initial:f.workspace});configureCalls(a);a.click('[data-profile-id]');const before=JSON.stringify(a.master());a.click('#profile-email');a.fill('#email-template','followup','change');a.fill('#email-template-pet',f.petId,'change');a.click('#email-template-apply');assert.equal(a.el('#email-template-schedule').hidden,true);assert.equal(a.el('#communication-run').disabled,false);
+  a.fill('#email-template-pet','', 'change');a.el('#communication-form').dispatchEvent(new a.w.Event('submit',{bubbles:true,cancelable:true}));assert.match(a.el('#communication-result').textContent,/Aplícala/);assert.equal(a.el('#call-review').hidden,true);
+  a.click('#communication-close');a.click('#profile-email');assert.equal(a.el('#email-template').value,'');assert.equal(a.el('#communication-message').value,'');assert.equal(JSON.stringify(a.master()),before);a.cleanup();
+});
 uiTest('Correo de ficha revisa, confirma, correlaciona y no persiste mensaje, clave ni resultado',async()=>{
   const f=fixture(),a=app({initial:f.workspace});configureCalls(a);a.click('[data-profile-id]');const before=JSON.stringify(a.master());
   let count=0,payload;a.w.fetch=async(u,o)=>{count++;payload=JSON.parse(o.body);return {status:200,json:async()=>({ok:true,status:'correo_enviado',requestId:payload.requestId,clientId:payload.clientId,messageId:'gmail-id'})};};
-  assert.equal(a.el('#profile-email').disabled,false);a.click('#profile-email');assert.equal(a.el('#communication-email').readOnly,true);assert.equal(a.el('#communication-email').value,owner.email);assert.equal(a.el('#communication-phone-label').hidden,true);assert.equal(a.el('#call-counter').textContent,'0/360');assert.equal(a.w.document.activeElement.id,'communication-subject');
+  assert.equal(a.el('#profile-email').disabled,false);a.click('#profile-email');assert.equal(a.el('#communication-email').readOnly,true);assert.equal(a.el('#communication-email').value,owner.email);assert.equal(a.el('#communication-phone-label').hidden,true);assert.equal(a.el('#call-counter').textContent,'0/360');assert.equal(a.w.document.activeElement.id,'email-template');
   reviewEmail(a,'Hola <b>Ana</b>\nSegunda línea');assert.equal(count,0);assert.equal(a.el('#call-review').hidden,false);assert.equal(a.el('#call-review-message b'),null);assert.equal(a.el('#email-review-subject').textContent,'Seguimiento');
   a.click('#call-edit');assert.equal(a.el('#communication-message').value,'Hola <b>Ana</b>\nSegunda línea');reviewEmail(a);a.click('#call-confirm');await new Promise(r=>setImmediate(r));
   assert.equal(count,1);assert.deepEqual(Object.keys(payload),['action','email','subject','message','clientId','requestId']);assert.equal(payload.action,'correo');assert.equal(payload.email,owner.email);assert.match(a.el('#communication-result').textContent,/Correo enviado/);assert.match(a.el('#communication-result').textContent,/gmail-id/);assert.equal(JSON.stringify(a.master()),before);
@@ -357,7 +409,7 @@ uiTest('CSV reimportado está marcado como ya registrado y no habilita confirmar
 });
 uiTest('CSV: falla de cuota conserva candidato/IDs, permite respaldo y reintento completo',async()=>{
   const C=require('../assets/registry-csv.js'),a=app({blocked:true});a.click('#open-data');await loadCsv(a,C.example());a.click('#csv-confirm');assert.equal(a.data.size,0);assert.equal(a.el('#csv-review').hidden,false);assert.equal(a.w.PetDoctorApplication.hasPending(),true);assert.equal(a.el('#csv-confirm').disabled,true);
-  a.click('#data-pending');const backup=await a.backup();assert.equal(backup.pets.length,15);assert.match(a.downloads.at(-1).name,/pendiente/);a.block(false);a.click('#data-retry');assert.equal(a.master().pets.length,15);assert.equal(a.master().pets[0].id,backup.pets[0].id);assert.equal(a.el('#csv-review').hidden,true);assert.equal(a.w.PetDoctorApplication.hasPending(),false);a.cleanup();
+  a.click('#open-data');a.click('#download-pending');const backup=await a.backup();assert.equal(backup.pets.length,15);assert.match(a.downloads.at(-1).name,/pendiente/);a.block(false);a.click('#retry-save');assert.equal(a.master().pets.length,15);assert.equal(a.master().pets[0].id,backup.pets[0].id);assert.equal(a.el('#csv-review').hidden,true);assert.equal(a.w.PetDoctorApplication.hasPending(),false);a.cleanup();
 });
 uiTest('CSV: cambio local o evento de otra pestaña invalida la revisión',async()=>{
   const C=require('../assets/registry-csv.js');for(const external of [false,true]){
@@ -368,11 +420,11 @@ uiTest('CSV: cambio local o evento de otra pestaña invalida la revisión',async
   }
 });
 uiTest('CSV: escritura externa sin evento también es rechazada sin sobrescribir',async()=>{
-  const C=require('../assets/registry-csv.js'),a=app();a.click('#open-data');await loadCsv(a,C.example());const outside=JSON.stringify(fixture().workspace);a.data.set(W.KEY,outside);a.click('#csv-confirm');assert.equal(a.data.get(W.KEY),outside);assert.equal(a.w.PetDoctorApplication.getWorkspace().owners.length,0);assert.equal(a.w.PetDoctorApplication.hasPending(),true);a.click('#data-retry');assert.equal(a.data.get(W.KEY),outside);a.click('#csv-cancel');assert.equal(a.w.PetDoctorApplication.hasPending(),false);a.cleanup();
+  const C=require('../assets/registry-csv.js'),a=app();a.click('#open-data');await loadCsv(a,C.example());const outside=JSON.stringify(fixture().workspace);a.data.set(W.KEY,outside);a.click('#csv-confirm');assert.equal(a.data.get(W.KEY),outside);assert.equal(a.w.PetDoctorApplication.getWorkspace().owners.length,0);assert.equal(a.w.PetDoctorApplication.hasPending(),true);a.click('#retry-save');assert.equal(a.data.get(W.KEY),outside);a.click('#csv-cancel');assert.equal(a.w.PetDoctorApplication.hasPending(),false);a.cleanup();
 });
 uiTest('CSV: paginación de 20 filas, descargas exactas y nueva selección descarta lectura anterior',async()=>{
   const C=require('../assets/registry-csv.js'),rows=C.exampleRows(),extra=rows.slice(1).map((r,i)=>r.map((v,k)=>k===5?'extra-'+i:k===6?'Nuevo '+v:v)),a=app();a.click('#open-data');
-  a.click('#csv-template');assert.equal(await a.downloadText(),C.template().replace(/^\ufeff/,''));a.click('#csv-example');assert.equal(await a.downloadText(),C.example25().replace(/^\ufeff/,''));
+  assert.equal(a.el('#csv-template'),null);assert.equal(a.el('#csv-example'),null);
   await loadCsv(a,C.serialize([...rows,...extra]));assert.equal(a.el('#csv-rows').rows.length,20);a.click('#csv-next');assert.equal(a.el('#csv-rows').rows.length,10);assert.match(a.el('#csv-page').textContent,/Página 2 de 2/);a.click('#csv-prev');assert.equal(a.el('#csv-rows').rows.length,20);
   let finish;await loadCsv(a,'','lento.csv',{text:()=>new Promise(resolve=>{finish=resolve;})});await loadCsv(a,C.example(),'actual.csv');finish('archivo inválido');await new Promise(resolve=>setImmediate(resolve));assert.match(a.el('#csv-filename').textContent,/actual.csv/);assert.equal(a.el('#csv-confirm').disabled,false);a.cleanup();
 });
@@ -389,6 +441,9 @@ uiTest('Estilos compartidos respetan el tamaño nativo de radios/casillas del co
   }
   // Reproduce una hoja compartida antigua o inyectada después del resto.
   const stale=a.w.document.createElement('style');stale.textContent='.app-main input{width:100%;min-height:48px;margin-top:8px}';a.w.document.head.append(stale);
+  // jsdom no resuelve especificidad entre hojas como Chrome. La cascada con hoja antigua
+  // se comprueba en navegador real; aquí se verifican las dimensiones de la hoja final.
+  const final=a.w.document.createElement('style');final.textContent=fs.readFileSync(path.join(root,'assets/quote-controls.css'),'utf8');a.w.document.head.append(final);
   a.w.PetDoctorApplication.navigate('quote');
   function compact(selector,width){const input=a.el(selector);assert.ok(input,selector);const css=a.w.getComputedStyle(input);assert.equal(css.width,width,selector);assert.notEqual(css.minHeight,'48px',selector);assert.notEqual(css.marginTop,'8px',selector);assert.equal(css.flexShrink,'0',selector);assert.equal(css.flexBasis,width,selector);assert.equal(css.maxWidth,width,selector);}
   assert.equal(a.w.getComputedStyle(a.el('.choice-card>span')).flexGrow,'1');
@@ -410,11 +465,11 @@ uiTest('Atenciones CSV: 150/200, revisión paginada, confirmación y persistenci
   const reload=app({data:a.data});assert.equal(reload.master().attentions.length,150);reload.cleanup();a.cleanup();
 });
 uiTest('Atenciones CSV: faltar clientes bloquea todo; cancelar no escribe; descargas exactas',async()=>{
-  const a=app();a.click('#open-data');a.click('#attention-csv-template');assert.equal(await a.downloadText(),ATT.template().replace(/^\ufeff/,''));assert.match(a.downloads.at(-1).name,/plantilla/);a.click('#attention-csv-example');assert.equal(await a.downloadText(),ATT.example().replace(/^\ufeff/,''));assert.match(a.downloads.at(-1).name,/150/);
+  const a=app();a.click('#open-data');assert.equal(a.el('#attention-csv-template'),null);assert.equal(a.el('#attention-csv-example'),null);
   await loadAttentionCsv(a);assert.equal(a.el('#attention-csv-confirm').disabled,true);assert.match(a.el('#attention-csv-issues').textContent,/csv-demo-atencion-001/);assert.equal(a.data.size,0);a.click('#attention-csv-cancel');assert.equal(a.el('#attention-csv-review').hidden,true);assert.equal(a.w.document.activeElement.id,'attention-csv-open');assert.equal(a.data.size,0);a.cleanup();
 });
 uiTest('Atenciones CSV: fallo de almacenamiento permite respaldo y reintento sin duplicar',async()=>{
-  const a=app({initial:registry25(),blocked:true});a.click('#open-data');await loadAttentionCsv(a);a.click('#attention-csv-confirm');assert.equal(a.master().attentions.length,0);assert.equal(a.w.PetDoctorApplication.hasPending(),true);assert.equal(a.el('#attention-csv-confirm').disabled,true);a.click('#data-pending');const pending=await a.backup();assert.equal(pending.attentions.length,150);assert.match(a.downloads.at(-1).name,/pendiente/);a.block(false);a.click('#data-retry');assert.equal(a.master().attentions.length,150);assert.equal(a.master().attentions[0].id,pending.attentions[0].id);assert.equal(a.el('#attention-csv-review').hidden,true);a.cleanup();
+  const a=app({initial:registry25(),blocked:true});a.click('#open-data');await loadAttentionCsv(a);a.click('#attention-csv-confirm');assert.equal(a.master().attentions.length,0);assert.equal(a.w.PetDoctorApplication.hasPending(),true);assert.equal(a.el('#attention-csv-confirm').disabled,true);a.click('#open-data');a.click('#download-pending');const pending=await a.backup();assert.equal(pending.attentions.length,150);assert.match(a.downloads.at(-1).name,/pendiente/);a.block(false);a.click('#retry-save');assert.equal(a.master().attentions.length,150);assert.equal(a.master().attentions[0].id,pending.attentions[0].id);assert.equal(a.el('#attention-csv-review').hidden,true);a.cleanup();
 });
 uiTest('Atenciones CSV: reimportar no sobrescribe snapshots y base cambiada invalida revisión',async()=>{
   const initial=ATT.prepare(registry25(),ATT.example()).candidate,a=app({initial});const first=initial.attentions[0];

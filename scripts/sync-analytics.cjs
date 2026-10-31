@@ -1,7 +1,7 @@
 // Sincronización reproducible: solo escribe dependencias dentro de analitica/.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const root=path.resolve(__dirname,'..'),target=path.join(root,'analitica');
-const files=['catalog.js','pricing.js','files.js','workspace.js','registry-csv.js','attention-csv.js','history.js'];
+const files=['records.js','catalog.js','pricing.js','files.js','workspace.js','registry-csv.js','attention-csv.js','history.js','analytics-csv.js'];
 const examples=['clientes-perritos-ejemplo-25.csv','clientes-perritos-plantilla.csv','atenciones-ejemplo-150.csv','atenciones-plantilla.csv'];
 const hashes={};
 for(const [folder,list,output] of [['assets',files,'lib'],['examples',examples,'examples']]){

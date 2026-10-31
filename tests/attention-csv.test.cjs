@@ -3,7 +3,7 @@ const A=require('../assets/attention-csv.js'),R=require('../assets/registry-csv.
 const now=Date.parse('2026-10-31T23:59:59-05:00');
 const workspace=()=>R.prepare(W.empty(),R.example25()).candidate;
 const row=()=>['csv-att-test','2026-10-01','10:00:00','csv-demo-cliente-01','csv-demo-perrito-01','consulta','primera','','','','','','','','','',''];
-const csv=(...rows)=>R.serialize([A.HEADERS,...rows]);
+const csv=(...rows)=>R.serialize([A.HEADERS,...rows.map(row=>row.length===A.LEGACY_HEADERS.length?row.concat(Array(A.HEADERS.length-row.length).fill('')):row)]);
 const prepare=(ws,...rows)=>A.prepare(ws,csv(...rows),{now});
 
 test('Ejemplo 25/45 conserva íntegros los 10/15 originales y amplía sin duplicar',()=>{

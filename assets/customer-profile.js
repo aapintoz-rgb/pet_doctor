@@ -26,6 +26,9 @@
       <div class="profile-stats"><div><strong>${rows.length}</strong><span>Atenciones realizadas</span></div><div><strong>${money(rows.reduce((sum,row)=>sum+row.total,0))}</strong><span>Total acumulado</span></div><div><strong>${date}</strong><span>Última atención · Lima</span></div></div>
       <section class="profile-pets" aria-label="Perritos del cliente"><div class="profile-heading"><h3>Sus perritos</h3><button type="button" id="profile-add-pet" class="secondary-button">＋ Agregar perrito</button></div><div class="pet-card-grid">${pets.map(p=>`<article class="profile-pet"><h4>${esc(p.name||'Sin nombre')}</h4><p>${p.weightKg!==null?esc(p.weightKg)+' kg':p.size?esc(g.PetDoctorCatalog.sizes[p.size].name):'Tamaño pendiente'} · ${p.coat==='long'?'Pelaje largo o denso':p.coat==='short'?'Pelaje corto':'Pelaje pendiente'}</p><small>Código ${esc(p.id)}</small><button type="button" class="text-button" data-edit-profile-pet="${esc(p.id)}">Editar datos</button></article>`).join('')||'<p>Este cliente todavía no tiene perritos registrados.</p>'}</div></section>
       <section class="profile-communications" aria-label="Comunicaciones"><h3>Comunicaciones</h3><p>Correos y llamadas a destinos autorizados mediante la única conexión n8n.</p><div class="data-actions"><button type="button" id="profile-email" class="secondary-button"${I.validEmailRecipient(owner.email)&&App.getCallEndpoint()&&App.getCallKey()?'':' disabled'}>Enviar correo</button><button type="button" id="profile-phone" class="secondary-button"${I.validCallPhone(owner.contact)&&App.getCallEndpoint()&&App.getCallKey()?'':' disabled'}>Llamar</button></div><p class="field-hint">Para comunicarte, configura la URL y la clave de sesión en Datos y respaldos. Cada destinatario debe estar autorizado en n8n.</p>${!I.validEmailRecipient(owner.email)?'<p class="field-hint">Completa una única dirección de correo válida en «Editar datos» para poder enviar.</p>':''}${!I.validCallPhone(owner.contact)?'<p class="field-hint">Corrige el teléfono con prefijo internacional en «Editar datos» para poder llamar.</p>':''}</section>`;
+    const D=g.PetDoctorRecords;
+    const district=document.createElement('div');district.innerHTML='<dt>Distrito</dt><dd></dd>';district.lastElementChild.textContent=owner.district||'No registrado';el('profile-card').querySelector('.profile-data').append(district);
+    el('profile-card').querySelectorAll('.profile-pet').forEach((card,i)=>{const p=pets[i],info=document.createElement('p');info.textContent='Canino · '+(p.breed||'Raza no registrada')+' · '+D.sexLabel(p.sex)+' · '+D.ageLabel(p.ageReference)+(p.ageReference?' · Nacimiento estimado: '+p.ageReference.estimatedBirthDate:'');card.querySelector('h4').after(info);});
     profileHistory?.render();
   }
   function openCall(button){openCommunication('llamada',button);}
@@ -50,7 +53,7 @@
     el('communication-review-notice').textContent=email?'Gmail enviará el mensaje a esta dirección. Cerrar la página no cancela un envío iniciado.':'Twilio intentará llamar a este número. El flujo trial actual reproduce una plantilla; la lectura del mensaje personalizado está pendiente. Cancelar la espera no cancela una llamada iniciada.';
     el('call-confirm').textContent=email?'Confirmar envío real':'Confirmar llamada real';el('call-new').textContent=email?'Preparar nuevo correo':'Preparar nueva llamada';
     el('call-review').hidden=true;el('call-new').hidden=true;el('call-counter').hidden=false;el('communication-close').disabled=false;el('call-confirm').disabled=false;el('call-edit').disabled=false;
-    updateCounter();el('communication-dialog').showModal();el(email?'communication-subject':'communication-message').focus();
+    templatesUI.reset(email);templatesUI.lock(false);updateCounter();el('communication-dialog').showModal();el(email?'email-template':'communication-message').focus();
   }
   function updateCounter(){
     const email=communicationKind==='correo',limit=email?360:120,count=I.emailTextLength(el('communication-message').value);
@@ -72,6 +75,7 @@
     if(result.messageId){const reference=document.createElement('p');reference.textContent='ID Gmail: '+result.messageId;box.append(reference);}
     if(requestId){const reference=document.createElement('small');reference.textContent='Solicitud: '+requestId;box.append(reference);}box.focus();
   }
+  const templatesUI=g.PetDoctorEmailTemplates.mount({container:el('communication-form'),subject:el('communication-subject'),message:el('communication-message'),getWorkspace:App.getWorkspace,getOwnerId:()=>communicationOwnerId,onChange:updateCounter});
   el('communication-message').addEventListener('input',updateCounter);
   el('communication-subject').addEventListener('input',updateCounter);
   el('communication-form').addEventListener('submit',async event=>{
@@ -81,19 +85,20 @@
       try{
         I.callEndpoint(App.getCallEndpoint());I.callKey(App.getCallKey());
         const email=communicationKind==='correo';
+        if(email)templatesUI.validate();
         if(!owner||(email?I.normalizeEmail(owner.email)!==el('communication-email').value:I.normalizePhone(owner.contact)!==el('communication-phone').value))throw new Error(email?'El correo del cliente cambió. Cierra y vuelve a revisar el destinatario.':'El teléfono del cliente cambió. Cierra y vuelve a abrir la llamada para revisarlo.');
         const payload=email?I.prepareEmail(owner,{subject:el('communication-subject').value,message:el('communication-message').value}):I.prepareCall(owner,{message:el('communication-message').value});
         review={payload,name:owner.name};el('call-review-client').textContent=owner.name;el('call-review-phone').textContent=email?payload.email:payload.phone;el('email-review-subject').textContent=payload.subject||'';el('call-review-message').textContent=payload.message;
-        el('communication-message').readOnly=true;el('communication-subject').readOnly=true;el('communication-run').hidden=true;el('call-review').hidden=false;el('communication-result').hidden=true;el('call-review').focus();
+        templatesUI.lock(true);el('communication-message').readOnly=true;el('communication-subject').readOnly=true;el('communication-run').hidden=true;el('call-review').hidden=false;el('communication-result').hidden=true;el('call-review').focus();
       }catch(error){showResult({kind:'validation',message:error.message});}
   });
-  el('call-edit').addEventListener('click',()=>{if(busy)return;review=null;el('call-review').hidden=true;el('communication-message').readOnly=false;el('communication-subject').readOnly=false;el('communication-run').hidden=false;updateCounter();el('communication-message').focus();});
+  el('call-edit').addEventListener('click',()=>{if(busy)return;templatesUI.lock(false);review=null;el('call-review').hidden=true;el('communication-message').readOnly=false;el('communication-subject').readOnly=false;el('communication-run').hidden=false;updateCounter();el('communication-message').focus();});
   el('call-confirm').addEventListener('click',async()=>{
     if(busy||!review||callFinished)return;
     const owner=App.getWorkspace().owners.find(item=>item.id===communicationOwnerId);
     const email=communicationKind==='correo';
     if(!owner||(email?I.normalizeEmail(owner.email)!==review.payload.email:I.normalizePhone(owner.contact)!==review.payload.phone)){showResult({kind:'validation',message:email?'El cliente ya no existe o su correo cambió. Cierra y vuelve a revisar el destinatario.':'El cliente ya no existe o su teléfono cambió. Cierra y vuelve a revisar la llamada.'});return;}
-    try{I.callEndpoint(App.getCallEndpoint());I.callKey(App.getCallKey());(email?I.validateEmailPayload:I.validateCallPayload)(review.payload);}catch(error){showResult({kind:'validation',message:error.message});return;}
+    try{if(email)templatesUI.validate();I.callEndpoint(App.getCallEndpoint());I.callKey(App.getCallKey());(email?I.validateEmailPayload:I.validateCallPayload)(review.payload);}catch(error){showResult({kind:'validation',message:error.message});return;}
     const token=++generation,payload=review.payload;busy=true;el('call-confirm').disabled=true;el('call-edit').disabled=true;el('communication-close').disabled=true;el('communication-result').hidden=false;el('communication-result').textContent=email?'Solicitando el envío a Gmail. Espera la respuesta; cerrar la página no cancela un envío iniciado.':'Solicitando la llamada a Twilio. Espera la respuesta; cerrar la página no cancela una llamada iniciada.';
     try{const result=await (email?I.runEmail:I.runCall)(App.getCallEndpoint(),payload,App.getCallKey());if(token===generation)showResult(result,payload.requestId);}
     catch{if(token===generation)showResult({kind:'unknown',message:email?I.UNKNOWN_EMAIL:I.UNKNOWN_CALL},payload.requestId);}

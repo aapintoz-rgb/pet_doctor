@@ -1,13 +1,358 @@
 {
   "type": "pet-doctor.registry",
-  "version": 1,
+  "version": 2,
   "owners": [
-    {"id": "owner-demo-1", "name": "Ana Ejemplo", "contact": ""},
-    {"id": "owner-demo-2", "name": "Luis Ejemplo", "contact": ""}
+    {
+      "id": "csv-demo-cliente-01",
+      "name": "Ana Ejemplo",
+      "contact": "000000001",
+      "district": "Surco",
+      "dni": "00000001",
+      "email": "cliente1@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-02",
+      "name": "Luis Demostración",
+      "contact": "000000002",
+      "district": "Barranco",
+      "dni": "00000002",
+      "email": "cliente2@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-03",
+      "name": "María Prueba",
+      "contact": "000000003",
+      "district": "Miraflores",
+      "dni": "00000003",
+      "email": "cliente3@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-04",
+      "name": "José Modelo",
+      "contact": "000000004",
+      "district": "San Borja",
+      "dni": "00000004",
+      "email": "cliente4@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-05",
+      "name": "Lucía Ensayo",
+      "contact": "000000005",
+      "district": "Jesús María",
+      "dni": "00000005",
+      "email": "cliente5@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-06",
+      "name": "Carlos Ficticio",
+      "contact": "000000006",
+      "district": "Surco",
+      "dni": "00000006",
+      "email": "cliente6@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-07",
+      "name": "Elena Muestra",
+      "contact": "000000007",
+      "district": "Barranco",
+      "dni": "00000007",
+      "email": "cliente7@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-08",
+      "name": "Óscar Ejemplo",
+      "contact": "000000008",
+      "district": "Miraflores",
+      "dni": "00000008",
+      "email": "cliente8@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-09",
+      "name": "Sofía Demostración",
+      "contact": "000000009",
+      "district": "San Borja",
+      "dni": "00000009",
+      "email": "cliente9@example.com"
+    },
+    {
+      "id": "csv-demo-cliente-10",
+      "name": "Andrés Prueba",
+      "contact": "000000010",
+      "district": "Jesús María",
+      "dni": "00000010",
+      "email": "cliente10@example.com"
+    }
   ],
   "pets": [
-    {"id": "pet-demo-1", "ownerId": "owner-demo-1", "name": "Luna", "weightKg": 12.5, "coat": "long"},
-    {"id": "pet-demo-2", "ownerId": "owner-demo-1", "name": "Toby", "size": "small", "coat": "short"},
-    {"id": "pet-demo-3", "ownerId": "owner-demo-2", "name": "Max", "weightKg": 30}
+    {
+      "id": "csv-demo-perrito-01",
+      "ownerId": "csv-demo-cliente-01",
+      "name": "Luna",
+      "weightKg": 12.5,
+      "size": null,
+      "coat": "short",
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "undetermined",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 1,
+        "months": 0,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2025-08-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-02",
+      "ownerId": "csv-demo-cliente-02",
+      "name": "Toby",
+      "weightKg": null,
+      "size": "medium",
+      "coat": "long",
+      "species": "canine",
+      "breed": "Mestizo",
+      "sex": "female",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 2,
+        "months": 1,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2024-07-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-03",
+      "ownerId": "csv-demo-cliente-03",
+      "name": "Nala",
+      "weightKg": null,
+      "size": null,
+      "coat": null,
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "male",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 3,
+        "months": 2,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2023-06-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-04",
+      "ownerId": "csv-demo-cliente-04",
+      "name": "Max",
+      "weightKg": 12.5,
+      "size": null,
+      "coat": "long",
+      "species": "canine",
+      "breed": "Mestizo",
+      "sex": "undetermined",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 4,
+        "months": 3,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2022-05-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-05",
+      "ownerId": "csv-demo-cliente-05",
+      "name": "Kira",
+      "weightKg": null,
+      "size": "medium",
+      "coat": "short",
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "male",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 5,
+        "months": 4,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2021-04-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-06",
+      "ownerId": "csv-demo-cliente-06",
+      "name": "Coco",
+      "weightKg": null,
+      "size": null,
+      "coat": null,
+      "species": "canine",
+      "breed": "Mestizo",
+      "sex": "female",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 6,
+        "months": 5,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2020-03-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-07",
+      "ownerId": "csv-demo-cliente-06",
+      "name": "Milo",
+      "weightKg": 12.5,
+      "size": null,
+      "coat": "short",
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "undetermined",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 7,
+        "months": 6,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2019-02-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-08",
+      "ownerId": "csv-demo-cliente-07",
+      "name": "Lola",
+      "weightKg": null,
+      "size": "medium",
+      "coat": "long",
+      "species": "canine",
+      "breed": "Mestizo",
+      "sex": "female",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 8,
+        "months": 7,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2018-01-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-09",
+      "ownerId": "csv-demo-cliente-07",
+      "name": "Bruno",
+      "weightKg": null,
+      "size": null,
+      "coat": null,
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "male",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 1,
+        "months": 8,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2024-12-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-10",
+      "ownerId": "csv-demo-cliente-08",
+      "name": "Nina",
+      "weightKg": 12.5,
+      "size": null,
+      "coat": "long",
+      "species": "canine",
+      "breed": "Mestizo",
+      "sex": "undetermined",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 2,
+        "months": 9,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2023-11-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-11",
+      "ownerId": "csv-demo-cliente-08",
+      "name": "Duna",
+      "weightKg": null,
+      "size": "medium",
+      "coat": "short",
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "male",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 3,
+        "months": 10,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2022-10-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-12",
+      "ownerId": "csv-demo-cliente-09",
+      "name": "Pipo \"Chiqui\"",
+      "weightKg": null,
+      "size": null,
+      "coat": null,
+      "species": "canine",
+      "breed": "Mestizo",
+      "sex": "female",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 4,
+        "months": 11,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2021-09-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-13",
+      "ownerId": "csv-demo-cliente-09",
+      "name": "Simba",
+      "weightKg": 12.5,
+      "size": null,
+      "coat": "short",
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "undetermined",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 5,
+        "months": 0,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2021-08-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-14",
+      "ownerId": "csv-demo-cliente-10",
+      "name": "Mora",
+      "weightKg": null,
+      "size": "medium",
+      "coat": "long",
+      "species": "canine",
+      "breed": "Mestizo",
+      "sex": "female",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 6,
+        "months": 1,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2020-07-21"
+      }
+    },
+    {
+      "id": "csv-demo-perrito-15",
+      "ownerId": "csv-demo-cliente-10",
+      "name": "Sol",
+      "weightKg": null,
+      "size": null,
+      "coat": null,
+      "species": "canine",
+      "breed": "Desconocida",
+      "sex": "male",
+      "registeredOn": "2026-08-21",
+      "ageReference": {
+        "years": 7,
+        "months": 2,
+        "asOf": "2026-08-21",
+        "estimatedBirthDate": "2019-06-21"
+      }
+    }
   ]
 }

@@ -1,1 +1,1 @@
-﻿cliente_id;cliente_nombre;cliente_dni;cliente_telefono;cliente_correo;perrito_id;perrito_nombre;peso_kg;tamano;pelaje
+﻿cliente_id;cliente_nombre;cliente_dni;cliente_telefono;cliente_correo;perrito_id;perrito_nombre;peso_kg;tamano;pelaje;cliente_distrito;especie;raza;sexo;edad_anios;edad_meses;fecha_referencia_edad

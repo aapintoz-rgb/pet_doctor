@@ -1,3 +1,7 @@
+> Interfaz vigente del 31/10/2026: consultar [Archivos y sincronización](archivos-y-sincronizacion.md). Clientes CSV se carga desde Clientes; atenciones CSV y JSON completo desde Datos y sincronización. Analítica admite solo el CSV único exportado desde esa sección. Se retiraron cargas de cotización/registro independiente y descargas de ejemplos, plantillas y archivos analíticos. Los formatos heredados de datos y validaciones descritos aquí siguen siendo referencias; las instrucciones previas sobre controles retirados quedan sin efecto.
+
+> Actualización local del 31/10/2026: registro ampliado y workspace v3 implementados. Consultar [modelo y compatibilidad v3](modelo-v3.md). Esta actualización sustituye las referencias previas a campos, CSV y workspace v2 como versión activa. Analítica conserva sus indicadores y diseño; publicación de esta entrega pendiente.
+
 > Actualización del 31/10/2026: el botón actual descarga 25 clientes y 45 perritos. [Archivo ampliado](../examples/clientes-perritos-ejemplo-25.csv). Se conservan intactos los 10/15 anteriores y se añaden 15 clientes con dos perritos cada uno; el resto de reglas de esta guía se mantiene. La carga histórica de atenciones ya está implementada localmente: [guía de atenciones](carga-atenciones-csv.md). Las referencias posteriores a futura entrega de atenciones describen el estado anterior.
 
 # Carga masiva de clientes y perritos

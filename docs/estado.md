@@ -1,5 +1,37 @@
 # Estado de Pet Doctor
 
+## Publicación autorizada — 31/10/2026
+
+El usuario solicita subir las copias locales y publicar. Esta entrega reúne registro v3, snapshots y edad estimada, tres plantillas de correo y reorganización de archivos con CSV analítico único. Se mantiene main y Pages desde raíz, conservando /analitica/. Sin cambios remotos a n8n ni envío de comunicaciones. Las notas de entrega local siguientes son antecedentes; antes de declarar la publicación terminada se comprobará el build correspondiente al commit y los recursos servidos por HTTPS.
+
+## Estado vigente — archivos centralizados y CSV analítico único — 31/10/2026, LOCAL
+
+Datos y sincronización es un módulo principal: JSON completo carga/descarga, exportación CSV para Analítica, carga masiva de atenciones y configuración n8n. Clientes contiene su carga CSV. Historial conserva el reporte filtrado y Cotización el PDF, Nueva y Guardar atención. Retiradas carga de cotización, registro JSON independiente y descargas de ejemplos/plantillas. Recuperación excepcional (reintento, respaldo pendiente, descarte) exclusivamente en Datos y sincronización; formularios muestran acceso sin descargas propias.
+
+Analítica carga solo el nuevo CSV y conserva IndexedDB y conjuntos previos. Retiradas entradas JSON/CSV separados/demostración y todas las descargas analíticas. Conserva filtros, seis indicadores y cinco gráficos sin cambios. Reemplazo completo tras revisión, progreso/cancelación por bloques, reintento ante cuota y control de concurrencia. El original CSV permite recuperar la carga. Vaciar mantiene confirmación y revisión.
+
+Contrato analytics-csv versión 1: una fila por servicio con datos visibles e importes exactos y celdas JSON que preservan snapshots, entidades actuales, estado y desglose. Exporta todos los guardados, no filtros/candidatos/cotizaciones independientes ni entidades sin atenciones. Conciliación estricta de componentes, servicios y atención; rechaza duplicados/contradicciones y nunca recalcula precios históricos. Workspace sigue v3. Nuevo módulo puro assets/analytics-csv.js, copiado con el sincronizador (nueve módulos). Guía vigente: [archivos-y-sincronizacion.md](archivos-y-sincronizacion.md), que sustituye las referencias históricas a controles retirados.
+
+Verificación: 188 pruebas aprobadas, cero fallidas/omitidas; sintaxis y git diff --check aprobados. Control de exportación y reconstrucción: 25 clientes, 45 perros, 150 atenciones, 200 servicios, 2.134.679 céntimos. Revisión Chrome a 360/768/1440: módulo Datos, inventario, cotización conservada al navegar, descarga real del CSV y carga completa en Analítica con métricas conciliadas. Datos ficticios, sin peticiones externas, comunicaciones, cambios n8n, commit ni publicación. Las notas anteriores siguientes son cronológicas y no describen las entradas/salidas vigentes.
+
+## Plantillas de correo — 31/10/2026, LOCAL
+
+Implementadas tres plantillas editables desde la ficha: Coordinación de cita, Recordatorio de cita y Seguimiento de atención. Redacción libre conservada como opción inicial. Selector explícito de perrito del dueño y fecha/hora futuras de Lima para citas. Botón de aplicación sustituye el texto únicamente al pulsarlo; cambios posteriores de selección exigen reaplicar. Los controles quedan bloqueados durante revisión/envío y se rehabilitan al editar. Revisión conserva destinatario de la ficha, límites 200/360, confirmación real y contrato n8n sin modificaciones. No se reserva agenda ni se persisten plantillas, mensajes o selecciones; apertura nueva empieza vacía. El módulo puro assets/email-templates.js se carga antes de customer-profile.js.
+
+Verificación: 180 pruebas aprobadas, cero fallidas/omitidas. Pruebas nuevas: generación de las tres variantes, vínculo dueño/perro, fecha/hora, datos inválidos, texto sin truncamiento, edición, bloqueo/revisión, reinicio y ausencia de escrituras/envíos al preparar. Chrome revisado a 360/768/1440 px sin desborde horizontal del diálogo. No se ejecutan comunicaciones reales ni se modifica el workflow remoto. Entrega local, sin publicar.
+
+## Estado vigente del módulo de registro ampliado — 31/10/2026, LOCAL
+
+Implementado workspace v3, distrito de cliente, especie Canino, raza/sexo/edad de perro y nacimiento estimado por años/meses y fecha de referencia de Lima. Peso opcional y cotización por rango conservados. Registros antiguos utilizables; al cambiar una entidad se completan sus obligatorios. Se preservan fechas estimadas al editar otros campos. Observaciones de atención opcionales, hasta 2.000 caracteres; snapshots independientes de cliente/perro y edad histórica. Actualizar servicios no sustituye los snapshots anteriores.
+
+Clave activa pet-doctor.workspace.v3 y respaldo pet-doctor-base-v3.json. Migración desde v2/maestro sin borrar claves antiguas, candidato pendiente/reintento ante cuota y control de concurrencia. Registro JSON versión 2 con botón de exportación propio. Nuevas columnas CSV y compatibilidad heredada, revisión atómica y conflictos sin sobrescritura. Historial exporta columnas nuevas desde snapshots; PDF y tarifas sin cambios. Guía normativa de este módulo: [modelo-v3.md](modelo-v3.md), que sustituye las notas previas sobre el modelo activo.
+
+Ejemplos actualizados con datos ficticios: IDs, vínculos y control 25 clientes/45 perros/150 atenciones/200 filas/2.134.679 céntimos conservados. Fixtures v2 retenidos. Analítica copia validadores y ejemplos nuevos y preserva v3 al respaldar; no cambian gráficos, KPI, filtros, diseño ni CSV de Analítica. records.js se carga antes de files y se copia con el sincronizador. No se modifican workflows ni comunicaciones.
+
+Verificación: 175 pruebas aprobadas, cero fallidas/omitidas, con jsdom 27.2.0 y fake-indexeddb de desarrollo fuera del repositorio. Nuevos casos de edad/calendario, migración, cuota, snapshots, CSV/JSON y DOM. Revisión visual real Chrome del registro/ficha a 360/768/1440 px, navegación de teclado, guardado sin peso, detalle/observaciones e importación v3 en Analítica. Sin desborde horizontal de página/diálogo en las vistas comprobadas. La prueba de especificidad CSS con hoja antigua se ejecutó además en Chrome; jsdom comprueba únicamente dimensiones de la hoja final. No es certificación multibrowser ni de lectores de pantalla.
+
+Entrega exclusivamente local: sin commit/push, publicación, llamadas, correos ni cambios remotos n8n. Las tres plantillas quedan para el siguiente módulo. Las secciones cronológicas siguientes describen versiones anteriores y no sustituyen este estado.
+
 ## Alcance acordado
 
 Repositorio de destino: https://github.com/aapintoz-rgb/pet_doctor

@@ -1,5 +1,6 @@
 (function (g) {
   'use strict';
+  const D = g.PetDoctorRecords || require('./records.js');
   const C = g.PetDoctorCatalog || require('./catalog.js').catalog;
   const defaults = g.PetDoctorDefaults || require('./catalog.js').defaults;
   const pricing = g.PetDoctorPricing || require('./pricing.js');
@@ -66,14 +67,14 @@
   }
   function readRegistry(source) {
     const file = parseJSON(source);
-    if (!obj(file) || file.type !== 'pet-doctor.registry' || file.version !== 1 || !Array.isArray(file.owners) || !Array.isArray(file.pets)) fail('Se necesita un registro Pet Doctor, versión 1, con owners y pets.');
+    if (!obj(file) || file.type !== 'pet-doctor.registry' || ![1,2].includes(file.version) || !Array.isArray(file.owners) || !Array.isArray(file.pets)) fail('Se necesita un registro Pet Doctor versión 1 o 2, con owners y pets.');
     if (file.owners.length > 10000 || file.pets.length > 10000) fail('El registro admite hasta 10 000 dueños y 10 000 mascotas.');
     const ownerIds = new Set(), petIds = new Set();
     const owners = file.owners.map(o => {
       if (!obj(o)) fail('Dueño inválido.');
       const id = text(o.id, 'id dueño', 100);
       if (!id.trim() || ownerIds.has(id)) fail('Los identificadores de dueños deben ser únicos y no vacíos.'); ownerIds.add(id);
-      return { id, name: text(o.name, 'nombre dueño'), contact: o.contact === undefined ? '' : text(o.contact, 'contacto') };
+      return { id, name: text(o.name, 'nombre dueño'), contact: o.contact === undefined ? '' : text(o.contact, 'contacto'), district:D.text(o.district??'','distrito',100) };
     });
     const pets = file.pets.map(p => {
       if (!obj(p)) fail('Mascota inválida.');
@@ -82,7 +83,7 @@
       if (!ownerIds.has(ownerId)) fail('Una mascota hace referencia a un dueño inexistente.');
       const weightKg = p.weightKg ?? null;
       if (weightKg !== null && (typeof weightKg !== 'number' || !Number.isFinite(weightKg) || weightKg <= 0)) fail('El peso registrado debe ser mayor que cero.');
-      return { id, ownerId, name: text(p.name, 'nombre mascota'), weightKg, size: choice(p.size ?? null, [null, ...Object.keys(C.sizes)], 'tamaño registrado'), coat: choice(p.coat ?? null, [null,'short','long'], 'pelaje registrado') };
+      return { id, ownerId, name: text(p.name, 'nombre mascota'), weightKg, size: choice(p.size ?? null, [null, ...Object.keys(C.sizes)], 'tamaño registrado'), coat: choice(p.coat ?? null, [null,'short','long'], 'pelaje registrado'), ...D.petExtras(p) };
     });
     return { owners, pets };
   }
@@ -125,6 +126,9 @@
     if (typeof attention.performedAt !== 'string' || !Number.isFinite(Date.parse(attention.performedAt))) fail('Fecha de atención inválida.');
     const quote = readQuote(JSON.stringify(attention.quote));
     if (quote.id !== attention.id || !pricing.calculate(quote.state).complete) fail('La atención debe contener servicios completos y el mismo identificador.');
+    if(attention.ownerSnapshot?.district!==undefined)D.text(attention.ownerSnapshot.district,'distrito histórico',100);
+    if(attention.petSnapshot!==undefined){D.validateSnapshot(attention.petSnapshot);if(attention.petSnapshot.id!==attention.quote.state.pet.petId||attention.petSnapshot.ownerId!==attention.quote.state.pet.ownerId)fail('La instantánea no coincide con el perro de la atención.');const age=D.ageAt(attention.petSnapshot.ageReference,D.today(new Date(attention.performedAt)));if(JSON.stringify(age)!==JSON.stringify(attention.petSnapshot.ageAtAttention??null))fail('La edad histórica no coincide con la fecha de atención.');}
+    if(attention.observations!==undefined)D.text(attention.observations,'observaciones',2000);
     return attention;
   }
   function registeredPet(state, registry) {

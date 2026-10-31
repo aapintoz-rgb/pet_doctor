@@ -3,7 +3,10 @@
   const R=g.PetDoctorRegistryCsv||require('./registry-csv.js'),W=g.PetDoctorWorkspace||require('./workspace.js');
   const F=g.PetDoctorFiles||require('./files.js'),P=g.PetDoctorPricing||require('./pricing.js');
   const C=g.PetDoctorCatalog||require('./catalog.js').catalog,defaults=g.PetDoctorDefaults||require('./catalog.js').defaults;
-  const HEADERS=['atencion_id','fecha','hora','cliente_id','perrito_id','servicio','modalidad','componentes','extras','peso_kg','tamano','pelaje','nudos','subtotal_servicio_pen','subtotal_atencion_pen','igv_atencion_pen','total_atencion_pen'];
+  const D=g.PetDoctorRecords||require('./records.js');
+  const LEGACY_HEADERS=['atencion_id','fecha','hora','cliente_id','perrito_id','servicio','modalidad','componentes','extras','peso_kg','tamano','pelaje','nudos','subtotal_servicio_pen','subtotal_atencion_pen','igv_atencion_pen','total_atencion_pen'];
+  const EXTRA_HEADERS=['cliente_distrito','especie','raza','sexo','edad_anios','edad_meses','observaciones'];
+  const HEADERS=[...LEGACY_HEADERS,...EXTRA_HEADERS];
   const norm=v=>String(v??'').normalize('NFC').trim();
   const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
   const formatter=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
@@ -48,8 +51,9 @@
     return Object.fromEntries(Object.keys(s).sort().map(key=>[key,s[key]]));
   }
   function prepare(workspace,source,{now=Date.now()}={}){
-    const parsed=R.parse(source,HEADERS),candidate=W.read(JSON.stringify(workspace)),baseFingerprint=JSON.stringify(workspace);
+    const parsed=R.parse(source,HEADERS,EXTRA_HEADERS),candidate=W.read(JSON.stringify(workspace)),baseFingerprint=JSON.stringify(workspace);
     const groups=new Map(),rows=[],errors=[],warnings=[],existing=new Map(candidate.attentions.map(a=>[a.id,a]));
+    if(!EXTRA_HEADERS.some(h=>parsed.header.includes(h)))warnings.push({line:1,column:'cabecera',message:'CSV histórico heredado: datos ampliados no informados se conservan sin registrar.'});
     const moments=new Map(candidate.attentions.map(a=>[(a.registration?.petId||a.quote.state.pet.petId)+'|'+new Date(a.performedAt).toISOString(),a.id]));
     let newAttentions=0,registered=0,total=0;
     for(const record of parsed.records){
@@ -75,6 +79,17 @@
         return value;
       }
       const ownerId=common('cliente_id'),petId=common('perrito_id'),date=common('fecha'),time=common('hora');
+      const historical={};
+      for(const column of EXTRA_HEADERS)historical[column]=common(column);
+      let age=null;
+      try{
+        if(historical.cliente_distrito!==undefined)D.text(historical.cliente_distrito,'distrito',100);
+        if(historical.especie!==undefined&&historical.especie!=='canino')throw Error('Solo se admite especie canino.');
+        if(historical.raza!==undefined)D.text(historical.raza,'raza');
+        if(historical.sexo!==undefined&&!['macho','hembra','no_determinado'].includes(historical.sexo))throw Error('Sexo inválido.');
+        if(historical.observaciones!==undefined)D.text(historical.observaciones,'observaciones',2000);
+        if(historical.edad_anios!==undefined||historical.edad_meses!==undefined){if(!/^\d+$/.test(historical.edad_anios??'')||!/^\d+$/.test(historical.edad_meses??''))throw Error('Completa años y meses de la edad histórica.');age=D.makeAge(Number(historical.edad_anios),Number(historical.edad_meses),date);}
+      }catch(e){error(first,'datos históricos',e.message);}
       let performedAt,selected;
       if(date&&time){
         if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date+'T00:00:00Z'))||new Date(date+'T00:00:00Z').toISOString().slice(0,10)!==date||!/^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(time))error(first,'fecha/hora','Fecha u hora inexistente o con formato incorrecto.');
@@ -99,6 +114,9 @@
       try{
         F.validateState(state);
         if(prior){
+          const ps=prior.petSnapshot;
+          const savedHistorical={cliente_distrito:prior.ownerSnapshot?.district,especie:ps?.species==='canine'?'canino':undefined,raza:ps?.breed,sexo:({male:'macho',female:'hembra',undetermined:'no_determinado'})[ps?.sex],edad_anios:ps?.ageAtAttention?.years,edad_meses:ps?.ageAtAttention?.months,observaciones:prior.observations};
+          for(const [key,value]of Object.entries(historical))if(value!==undefined&&String(savedHistorical[key]??'')!==value)throw Error('Los datos históricos explícitos difieren de la atención guardada: '+key+'.');
           if(prior.registration?.ownerId!==ownerId||prior.registration?.petId!==petId||new Date(prior.performedAt).toISOString()!==performedAt)throw Error('El ID existente tiene otro cliente, perrito o fecha. No se sobrescriben atenciones.');
           const saved=prior.quote.state;
           for(const key of ['sizeMode','weightKg','size','coat','knots'])if(!same(saved.pet[key],state.pet[key]))throw Error('Los datos tarifarios difieren de la atención guardada.');
@@ -120,7 +138,9 @@
         for(const [key,value] of Object.entries(controls))if(value!==undefined&&value!==attention.quote.pricing[key])error(first,key,'El importe de control no coincide exactamente con los servicios e IGV.');
         if(failed){for(const row of group)row.status='Error';continue;}
         const moment=petId+'|'+performedAt;if(moments.has(moment)&&moments.get(moment)!==id)warn(first,'fecha/hora','Otro ID de atención corresponde al mismo perrito e instante.');moments.set(moment,id);
-        attention.registration={ownerId,petId};attention.ownerSnapshot=JSON.parse(JSON.stringify(selected.owner));
+        attention.registration={ownerId,petId};attention.ownerSnapshot={...JSON.parse(JSON.stringify(selected.owner)),district:historical.cliente_distrito||''};
+        attention.petSnapshot=D.snapshot({id:petId,ownerId,name:state.pet.name,weightKg:state.pet.weightKg,size:state.pet.size,coat:state.pet.coat,...D.petExtras({breed:historical.raza||'',sex:({macho:'male',hembra:'female',no_determinado:'undetermined'})[historical.sexo]??null,ageReference:age})},date);
+        attention.observations=historical.observaciones||'';
         candidate.attentions.push(attention);newAttentions++;total+=attention.quote.pricing.total;
         if(!Number.isSafeInteger(total))throw Error('El total de la carga excede el rango seguro.');
         for(const row of group){row.status='Atención nueva';row.subtotal=attention.quote.pricing.services.find(s=>s.id===row.data.servicio)?.subtotal;}
@@ -141,7 +161,8 @@
       const grouped=services.map((config,index)=>{
         let conf=[...config];if(conf[0]==='consulta'&&i%2)conf[1]='control';
         if(conf[0]==='grooming'&&i%4===1){conf[1]='individual';conf[2]='bano|secado|unas';conf[3]='';}
-        const row=['csv-demo-atencion-'+String(i+1).padStart(3,'0'),day,hour,pet.ownerId,pet.id,...conf,index?'':String(state.pet.weightKg),'',index?'':i%2?'largo':'corto',index?'':state.pet.knots?'si':'no','','','',''];
+        const a=D.ageAt(pet.ageReference,day),owner=registry.owners.find(o=>o.id===pet.ownerId);
+        const row=['csv-demo-atencion-'+String(i+1).padStart(3,'0'),day,hour,pet.ownerId,pet.id,...conf,index?'':String(state.pet.weightKg),'',index?'':i%2?'largo':'corto',index?'':state.pet.knots?'si':'no','','','','',owner.district,'canino',pet.breed,({male:'macho',female:'hembra',undetermined:'no_determinado'})[pet.sex],String(a.years),String(a.months),'Atención ficticia de demostración'];
         configure(state,Object.fromEntries(HEADERS.map((h,j)=>[h,row[j]])));rows.push(row);return row;
       });
       const price=P.calculate(state);
@@ -150,6 +171,6 @@
     }
     return rows;
   }
-  const api={HEADERS,MAX_BYTES:R.MAX_BYTES,MAX_ROWS:R.MAX_ROWS,money,prepare,template:()=>R.serialize([HEADERS]),exampleRows,example:()=>R.serialize(exampleRows())};
+  const api={HEADERS,LEGACY_HEADERS,MAX_BYTES:R.MAX_BYTES,MAX_ROWS:R.MAX_ROWS,money,prepare,template:()=>R.serialize([HEADERS]),exampleRows,example:()=>R.serialize(exampleRows())};
   g.PetDoctorAttentionCsv=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);

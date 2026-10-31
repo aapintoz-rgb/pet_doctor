@@ -4,8 +4,8 @@ const W = require('../assets/workspace.js');
 const F = require('../assets/files.js');
 const { defaults } = require('../assets/catalog.js');
 
-const owner = { name: 'Ána Pérez', dni: '00123456', contact: '+51 (999) 123-456', email:'ana@example.com' };
-const pet = { name: 'Lúna', weightKg: 12.5, size: null, coat: 'long' };
+const owner = { name: 'Ána Pérez', dni: '00123456', contact: '+51 (999) 123-456', email:'ana@example.com', district:'Surco' };
+const pet = { name: 'Lúna', weightKg: 12.5, size: null, coat: 'long',breed:'Mestizo',sex:'female',ageReference:require('../assets/records').makeAge(2,3,'2026-08-21') };
 function setup() { return W.saveClient(W.empty(), { owner, pets: [pet, { ...pet, name: 'Toby', weightKg: null, size: 'small' }] }); }
 function stateFor(result) {
   const state = defaults(); state.selections.consulta.included = true;
@@ -91,7 +91,7 @@ test('Registro antiguo incompleto: incorporar, completar y rechazar conflictos s
   assert.equal(workspace.owners[0].dni, ''); assert.equal(W.hasSelection(workspace, 'o1', 'p1'), false);
   const state = defaults(); state.selections.consulta.included = true; state.pet.ownerId = 'o1'; state.pet.petId = 'p1';
   assert.throws(() => W.saveAttention(workspace, state, meta), /Completa/);
-  const completed = W.saveClient(workspace, { owner: { ...workspace.owners[0], dni: owner.dni, contact: owner.contact, email:owner.email }, pets: [] });
+  const completed = W.saveClient(workspace, { owner: { ...workspace.owners[0], dni: owner.dni, contact: owner.contact, email:owner.email, district:owner.district }, pets: [] });
   assert.equal(W.hasSelection(completed.workspace, 'o1', 'p1'), true);
   assert.throws(() => W.mergeRegistry(workspace, source), /Conflicto de ID/);
   const conflict = JSON.stringify({ type: 'pet-doctor.registry', version: 1, owners: [{ id: 'o2', ...owner }], pets: [] });
@@ -111,7 +111,7 @@ test('Migración conserva historial anónimo y la clave anterior; corrupción no
   const corrupt = memory({ [W.KEY]: '{broken' }), blockedStore = W.createStore(corrupt);
   assert.ok(blockedStore.error()); assert.throws(() => blockedStore.commit(W.empty()));
   assert.equal(corrupt.getItem(W.KEY), '{broken');
-  blockedStore.commit(W.empty(), { replace: true }); assert.equal(W.read(corrupt.getItem(W.KEY)).version, 2);
+  blockedStore.commit(W.empty(), { replace: true }); assert.equal(W.read(corrupt.getItem(W.KEY)).version, 3);
 });
 
 test('Transacción completa: fallo de cuota, reintento, recarga, respaldo y concurrencia', () => {
@@ -126,7 +126,7 @@ test('Transacción completa: fallo de cuota, reintento, recarga, respaldo y conc
 });
 
 test('Respaldos corruptos y relaciones de nuevas atenciones se rechazan completos', () => {
-  for (const source of ['{broken', '{}', JSON.stringify({ ...W.empty(), version: 3 })]) assert.throws(() => W.readBackup(source));
+  for (const source of ['{broken', '{}', JSON.stringify({ ...W.empty(), version: 99 })]) assert.throws(() => W.readBackup(source));
   const result = setup(), workspace = W.saveAttention(result.workspace, stateFor(result), meta);
   workspace.pets = []; assert.throws(() => W.read(JSON.stringify(workspace)));
   const orphan = setup().workspace; orphan.pets[0].ownerId = 'missing'; assert.throws(() => W.read(JSON.stringify(orphan)));
@@ -145,7 +145,7 @@ test('Cliente anterior sin correo mantiene atenciones y puede agregar perritos s
   const first=setup();delete first.workspace.owners[0].email;const legacy=W.read(JSON.stringify(first.workspace));
   assert.equal(legacy.owners[0].email,'');assert.equal(W.hasSelection(legacy,first.ownerId,first.petId),true);
   const saved=W.saveAttention(legacy,stateFor(first),meta);assert.equal(saved.attentions.length,1);
-  assert.throws(()=>W.saveClient(legacy,{owner:legacy.owners[0],pets:[]}),/correo/);
+  assert.throws(()=>W.saveClient(legacy,{owner:{...legacy.owners[0],name:'Nombre editado'},pets:[]}),/correo/);
   const added=W.saveClient(legacy,{operation:'addPets',owner:{...legacy.owners[0],name:'Cambio no permitido'},pets:[{...pet,name:'Max'}]});
   assert.equal(added.workspace.owners[0].name,owner.name);assert.equal(added.workspace.owners[0].email,'');assert.equal(added.workspace.pets.length,3);
 });

@@ -73,7 +73,7 @@ test('Opciones de cliente y perrito dependen del historial, sin cruzar dueños',
 test('CSV exacto: BOM, cabecera, 17 columnas, coma decimal y una fila por atención',()=>{
   const result=H.select(workspace()),csv=H.csv(result),parsed=parseCSV(csv);
   assert.equal(csv.charCodeAt(0),0xFEFF);assert.equal(parsed.length,5);assert.deepEqual(parsed[0],H.HEADERS);
-  assert.ok(parsed.every(row=>row.length===17));assert.equal(parsed[1][0],'b');assert.equal(parsed[1][6],'00123456');assert.equal(parsed[1][11],'60,00');assert.equal(parsed[1][12],'10,80');assert.equal(parsed[1][13],'70,80');assert.equal(parsed[1][3],'America/Lima');
+  assert.ok(parsed.every(row=>row.length===H.HEADERS.length));assert.equal(parsed[1][0],'b');assert.equal(parsed[1][6],'00123456');assert.equal(parsed[1][11],'60,00');assert.equal(parsed[1][12],'10,80');assert.equal(parsed[1][13],'70,80');assert.equal(parsed[1][3],'America/Lima');
   assert.equal(parsed[1][14],'PEN');assert.equal(parsed[1][15],'realizada');assert.equal(parsed[1][16],'si');
   assert.equal(result.total,4*7080);
 });

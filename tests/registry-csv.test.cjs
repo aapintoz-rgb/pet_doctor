@@ -4,9 +4,9 @@ const fs=require('node:fs');
 const path=require('node:path');
 const C=require('../assets/registry-csv.js'),W=require('../assets/workspace.js');
 const example=()=>fs.readFileSync(path.join(__dirname,'../examples/clientes-perritos-ejemplo-10.csv'),'utf8');
-const row=()=>['owner-csv','Ana Pérez','00123456','+51 999 123 456','ana@example.com','pet-csv','Luna','12,5','','largo'];
+const row=()=>['owner-csv','Ana Pérez','00123456','+51 999 123 456','ana@example.com','pet-csv','Luna','12,5','','largo','Surco','canino','Mestizo','hembra','2','3','2026-08-21'];
 const csv=(...rows)=>C.serialize([C.HEADERS,...rows]);
-const initial=()=>W.saveClient(W.empty(),{owner:{name:'Ana Pérez',dni:'00123456',contact:'+51 999 123 456',email:'ana@example.com'},pets:[{name:'Luna',weightKg:12.5,size:null,coat:'long'}]});
+const initial=()=>W.saveClient(W.empty(),{owner:{name:'Ana Pérez',dni:'00123456',contact:'+51 999 123 456',email:'ana@example.com',district:'Surco'},pets:[{name:'Luna',weightKg:12.5,size:null,coat:'long',breed:'Mestizo',sex:'female',ageReference:require('../assets/records').makeAge(2,3,'2026-08-21')}]});
 
 test('Ejemplo: 10 clientes, 15 perritos, distribución 5/5, IDs y DNI conservados al recargar',()=>{
   assert.equal(example(),C.example());assert.equal(example().charCodeAt(0),65279);assert.equal(example().replace(/\r\n/g,'').includes('\n'),false);
