@@ -8,7 +8,7 @@
   const modules=new Map(),listeners=new Set(),configListeners=new Set();
   function message(text,isError=false){const node=el('file-message');node.hidden=!text;node.textContent=text;node.classList.toggle('is-error',isError);if(isError&&pending&&active!=='data'){const button=document.createElement('button');button.type='button';button.className='text-button';button.textContent='Abrir Datos y sincronización';button.onclick=()=>navigate('data');node.append(' ',button);}}
   function download(blob,filename){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);}
-  function updateCounts(){el('export-analytics').disabled=!workspace.attentions.length;el('master-count').textContent=workspace.owners.length+' clientes · '+workspace.pets.length+' perritos · '+workspace.attentions.length+' atenciones';}
+  function updateCounts(){el('demo-welcome').hidden=workspace.owners.length>0||workspace.pets.length>0||workspace.attentions.length>0;el('export-analytics').disabled=!workspace.attentions.length;el('master-count').textContent=workspace.owners.length+' clientes · '+workspace.pets.length+' perritos · '+workspace.attentions.length+' atenciones';}
   function clearPending(scope){
     if(!pending || (scope && pending.scope!==scope))return true;
     if(!scope && !g.confirm('Hay un guardado pendiente. ¿Quieres descartarlo?'))return false;
@@ -81,6 +81,18 @@
     }catch(error){message(error.message,true);el('data-message').textContent=error.message;el('data-message').hidden=false;}
   }
   el('export-master').addEventListener('click',downloadMaster);
+  el('demo-start').addEventListener('click',()=>{navigate('data');if(active==='data')el('load-demo-data').focus();});
+  el('load-demo-data').addEventListener('click',()=>{
+    try{
+      if(pending)throw Error('Resuelve o descarta el guardado pendiente antes de cargar los datos de prueba.');
+      const clients=g.PetDoctorRegistryCsv.prepare(W.empty(),g.PetDoctorRegistryCsv.example25());
+      if(clients.errors.length)throw Error(clients.errors[0].message);
+      const attentions=g.PetDoctorAttentionCsv.prepare(clients.candidate,g.PetDoctorAttentionCsv.example());
+      if(attentions.errors.length)throw Error(attentions.errors[0].message);
+      if(!g.confirm('Cargar datos ficticios de prueba: 25 clientes, 45 perritos, 150 atenciones y 200 servicios. Total con IGV: S/ 21.346,79.\n\nSe REEMPLAZARÁ toda la base de este navegador y se descartará la cotización actual. Si tienes datos propios, cancela y descarga primero la base JSON. No se enviarán llamadas ni correos.\n\n¿Quieres cargar la demostración?'))return;
+      commit(attentions.candidate,()=>{for(const module of modules.values())module.onBaseReplaced?.();navigate('clients');message('Datos ficticios cargados: 25 clientes, 45 perritos y 150 atenciones. Abre una ficha para ver su historial o ve a Cotización para probar los servicios. Para usar el dashboard, abre Analítica y pulsa «Probar con datos de ejemplo».');},'import',true);
+    }catch(error){message(error.message,true);el('data-message').textContent=error.message;el('data-message').hidden=false;}
+  });
   el('import-master').addEventListener('click',()=>el('master-file').click());
   el('master-file').addEventListener('change',()=>readFile(el('master-file')));
   el('export-analytics').addEventListener('click',()=>{try{const csv=g.PetDoctorAnalyticsCsv.exportCsv(workspace);download(new Blob([csv],{type:'text/csv;charset=utf-8'}),'pet-doctor-analitica-'+g.PetDoctorRecords.today()+'.csv');message('CSV completo para Analítica descargado.');}catch(e){message(e.message,true);}});

@@ -485,3 +485,18 @@ uiTest('Atenciones CSV: errores de montos y contenido inválido no ejecutan impo
   const a=app({initial:registry25()}),rows=ATT.exampleRows(),before=JSON.stringify(a.master());rows[1][16]='0,01';a.click('#open-data');await loadAttentionCsv(a,REG.serialize(rows));assert.equal(a.el('#attention-csv-confirm').disabled,true);assert.match(a.el('#attention-csv-issues').textContent,/no coincide/);assert.equal(JSON.stringify(a.master()),before);
   await loadAttentionCsv(a,'a;b\n1;2');assert.equal(a.el('#attention-csv-review').hidden,true);assert.match(a.el('#attention-csv-message').textContent,/Cabecera/);assert.equal(JSON.stringify(a.master()),before);a.cleanup();
 });
+
+
+uiTest('Demostración: acceso inicial y carga completa sin archivos, reimportación sin duplicados',()=>{
+ const a=app();assert.equal(a.el('#demo-welcome').hidden,false);a.click('#demo-start');assert.equal(a.el('#data-dialog').hidden,false);assert.equal(a.w.document.activeElement.id,'load-demo-data');a.click('#load-demo-data');
+ assert.equal(a.master().owners.length,25);assert.equal(a.master().pets.length,45);assert.equal(a.master().attentions.length,150);assert.equal(a.master().attentions.reduce((n,x)=>n+x.quote.pricing.total,0),2134679);assert.equal(a.el('#demo-welcome').hidden,true);assert.equal(a.el('#clients-module').hidden,false);assert.equal(a.downloads.length,0);
+ a.click('#open-data');a.click('#load-demo-data');assert.equal(a.master().attentions.length,150);assert.match(a.confirmations.at(-1),/REEMPLAZARÁ/);a.cleanup();
+});
+
+uiTest('Demostración: cancelar conserva la base y la cotización',()=>{
+ const r=fixture(),a=app({initial:r.workspace});a.selectService();const before=JSON.stringify(a.master());a.click('#open-data');a.deny(true);a.click('#load-demo-data');assert.equal(JSON.stringify(a.master()),before);a.click('#nav-quote');assert.equal(a.el('[data-field="consulta.included"]').checked,true);assert.equal(a.downloads.length,0);a.cleanup();
+});
+
+uiTest('Demostración: cuota mantiene base anterior y recuperación centralizada',()=>{
+ const r=fixture(),a=app({initial:r.workspace}),before=JSON.stringify(a.master());a.click('#open-data');a.block(true);a.click('#load-demo-data');assert.equal(JSON.stringify(a.master()),before);assert.equal(a.el('#storage-recovery').hidden,false);a.click('#load-demo-data');assert.match(a.el('#data-message').textContent,/guardado pendiente/);a.block(false);a.click('#retry-save');assert.equal(a.master().attentions.length,150);assert.equal(a.el('#storage-recovery').hidden,true);a.cleanup();
+});

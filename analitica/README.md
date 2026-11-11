@@ -1,3 +1,5 @@
+> Actualización local 11/11/2026: disponible «Probar con datos de ejemplo», sin archivo, con revisión y confirmación. Carga 25 clientes, 45 perros, 150 atenciones y 200 servicios ficticios en el conjunto independiente de Analítica. La demostración reemplaza el conjunto previo tras confirmar; cancelar lo conserva. Esta decisión sustituye la retirada de demostración indicada en antecedentes.
+
 # Pet Doctor Analítica
 
 Dashboard independiente para atenciones realizadas. Esta revisión incorpora la reorganización del 31/10/2026, cuya publicación fue solicitada por el usuario. No cambian sus seis indicadores, cinco gráficos, filtros ni definiciones financieras. Verificar el despliegue correspondiente en GitHub Actions.

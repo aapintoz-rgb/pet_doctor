@@ -1,19 +1,25 @@
 # Archivos y sincronización manual
 
-Estado local vigente del 31/10/2026. Esta guía sustituye las instrucciones previas sobre ubicación de cargas, descargas y entradas de Analítica. Workspace continúa en versión 3; no hay sincronización automática, servidor ni modificaciones a n8n.
+Estado local vigente del 11/11/2026. Esta guía sustituye las instrucciones previas sobre ubicación de cargas, descargas y entradas de Analítica. Workspace continúa en versión 3; no hay sincronización automática, servidor ni modificaciones a n8n.
 
 ## Operaciones disponibles
 
 | Zona | Operación |
 |---|---|
-| Datos y sincronización | Descargar/cargar JSON completo, descargar CSV de Analítica, cargar atenciones CSV, configurar n8n |
+| Datos y sincronización | Descargar/cargar JSON completo, descargar CSV de Analítica, cargar atenciones CSV, cargar datos de prueba previa confirmación, configurar n8n |
 | Clientes | Cargar clientes y perros CSV |
 | Cotización | Generar cotización PDF, Nueva, Guardar atención; sin carga de cotización |
 | Historial general o de ficha | Descargar reporte CSV de los resultados filtrados |
-| Analítica | Una sola carga de CSV analítico; revisión, confirmación, cancelación, reintento y vaciado |
+| Analítica | Una sola carga de CSV analítico; revisión, confirmación, cancelación, reintento, vaciado y demostración con revisión |
 | Datos y sincronización ante un error | Reintentar, descargar respaldo pendiente, descartar candidato |
 
-Se retiran los controles para plantillas, ejemplos, registro JSON independiente, reportes/respaldos de Analítica y demostración. Los ejemplos y formatos permanecen en el repositorio para preparación de archivos y pruebas. El PDF se mantiene. Los reportes del historial no son archivos de carga.
+Se retiran los controles para plantillas, ejemplos, registro JSON independiente, reportes/respaldos de Analítica. Los ejemplos y formatos permanecen en el repositorio para preparación de archivos y pruebas. El PDF se mantiene. Los reportes del historial no son archivos de carga.
+
+## Primer uso sin archivos
+
+Clientes muestra «Probar con datos de ejemplo» cuando la base está vacía. En Datos y sincronización, «Cargar datos de prueba» permite revisar cantidades y confirmar el reemplazo completo: 25 clientes, 45 perros, 150 atenciones y 200 servicios ficticios. Si hay datos propios, descargar antes JSON. Cancelar conserva base y cotización. Los fallos de guardado siguen la recuperación centralizada. No mezcla ni duplica la demostración al repetir.
+
+En Analítica, «Probar con datos de ejemplo» prepara un conjunto independiente, con revisión, aviso de reemplazo y confirmación. La demostración se identifica con una etiqueta; no cambia el operativo. Estas opciones no añaden cargas/descargas de archivos ni envían comunicaciones.
 
 ## Uso
 

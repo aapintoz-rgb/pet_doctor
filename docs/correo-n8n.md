@@ -15,65 +15,13 @@ Webhook → Validar invocación → Switch (correo)
 
 Mantén la rama llamada → HTTP Request → adaptador Twilio tal como funciona. El fallback del Switch sigue conectado al nodo que prepara 400/403.
 
-## 2. Ampliar «Validar invocación» sin borrar tu lógica anterior
+## 2. Sustituir «Validar invocación» para ambas acciones
 
-Abre ese nodo, modo **Run Once for All Items**, JavaScript. Pega el siguiente fragmento **AL PRINCIPIO**, antes de tu primera línea actual. Debajo debe permanecer TODO tu código anterior, incluida la lista de teléfonos que autorizaste. Es un bloque independiente: intercepta solo solicitudes de correo y deja que las llamadas recorran tu código original. También intercepta variantes de mayúsculas/espacios para rechazarlas y evitar que el validador anterior las admita con reglas antiguas.
+Actualización del 31/10/2026: reemplaza TODO el código de este nodo por [validar-invocacion.code.js](../workflows/validar-invocacion.code.js), modo **Run Once for All Items**, JavaScript. No lo antepongas al código anterior: elimina también las listas de clientes/destinos permitidos. El nuevo script valida llamadas y correos y conserva sus contratos de salida.
 
-Archivo para copiar: `workflows/validar-correo.snippet.js`.
+Guía completa de puntos a revisar: [Webhook compartido sin listas de IDs](webhook-compartido.md). Header Auth permanece activo. Los IDs son obligatorios para correlación, pero no tienen que estar preinscritos en n8n. Cualquier destino con formato válido puede pasar esta validación; siguen aplicando las restricciones de Gmail y Twilio.
 
-```js
-// AÑADIR AL PRINCIPIO de «Validar invocación», sin borrar el código actual.
-{
-function validateEmailInvocation(body, permitted = {}) {
-  const data = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
-  const fields = ['action','email','subject','message','clientId','requestId'];
-  const errors = [];
-  function text(field) {
-    if (typeof data[field] !== 'string') { errors.push('El campo '+field+' debe ser texto.'); return ''; }
-    return data[field];
-  }
-  const action=text('action'), rawEmail=text('email'), rawSubject=text('subject'), rawMessage=text('message');
-  const email=rawEmail.trim(), subject=rawSubject.normalize('NFC').trim(), message=rawMessage.normalize('NFC').trim();
-  const clientId=text('clientId'), requestId=text('requestId');
-  if (Object.keys(data).some(field=>!fields.includes(field))) errors.push('La solicitud de correo contiene campos no admitidos.');
-  if (action!=='correo') errors.push('La acción debe ser correo.');
-  for (const [name,value] of [['clientId',clientId],['requestId',requestId]]) {
-    if (!value.trim() || value.length>100) errors.push('El campo '+name+' es obligatorio y admite hasta 100 caracteres.');
-  }
-  if (!email || email.length>254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || /[\s,;<>]/.test(email) || /[\r\n]/.test(rawEmail)) errors.push('Se necesita una única dirección de correo válida.');
-  if (!subject || Array.from(subject).length>200 || /[\r\n]/.test(rawSubject)) errors.push('El asunto debe tener de 1 a 200 caracteres y ocupar una sola línea.');
-  if (!message || Array.from(message).length>360) errors.push('El mensaje de correo debe tener de 1 a 360 caracteres.');
-  function reject(statusCode,status,details) {
-    return {action:'invalida',statusCode,response:{ok:false,status,requestId:requestId&&requestId.length<=100?requestId:null,clientId:clientId&&clientId.length<=100?clientId:null,message:'No se ejecutó Gmail.',errors:details}};
-  }
-  if (errors.length) return reject(400,'solicitud_invalida',errors);
-  const allowed=Object.hasOwn(permitted,clientId)&&typeof permitted[clientId]==='string'?permitted[clientId].trim():'';
-  if (!allowed || allowed!==email) return reject(403,'destino_no_autorizado',['El cliente y correo no están autorizados en n8n.']);
-  return {action:'correo',email,subject,message,clientId,requestId};
-}
-
-// Configuración exclusiva de n8n: clientId -> correo autorizado.
-const CORREOS_PERMITIDOS = {};
-const entradaCorreo = $input.first().json.body;
-if (typeof entradaCorreo?.action === 'string' && entradaCorreo.action.trim().toLowerCase() === 'correo') {
-  return [{json:validateEmailInvocation(entradaCorreo, CORREOS_PERMITIDOS)}];
-}
-}
-// Debajo continúa TODO el código actual de llamada y validación general.
-
-```
-
-Dentro del fragmento cambia exclusivamente `CORREOS_PERMITIDOS` para añadir el ID real de la ficha y el correo que registraste. Ejemplo **ficticio**, no listo para enviar:
-
-```js
-const CORREOS_PERMITIDOS = {
-  "ID_COPIADO_DEL_CODIGO_DE_LA_FICHA": "tu-correo-de-prueba@ejemplo.com"
-};
-```
-
-El código del cliente está debajo de su nombre en Pet Doctor. No uses nombre ni DNI. El correo debe coincidir exactamente después de quitar espacios exteriores; no se convierten mayúsculas silenciosamente. Con la lista vacía, el correo devuelve 403 y **no ejecuta Gmail**. Mantén los pares reales solo en n8n, no en el repositorio ni en archivos publicados.
-
-El fragmento se entrega separado porque la última exportación disponible es anterior al HTTP Request de llamada. Así se conserva tu validador vigente sin inventar ni sobrescribir sus cambios.
+El fragmento validar-correo.snippet.js se conserva solo para integraciones que requieran interceptar correos antes de un validador propio. Para eliminar las restricciones de AMBAS acciones usa el reemplazo completo indicado arriba.
 
 ## 3. Revisar Switch y Gmail
 
@@ -138,7 +86,7 @@ La aplicación prepara únicamente este JSON de negocio:
 {"action":"correo","email":"cliente@ejemplo.com","subject":"Seguimiento","message":"Hola desde Pet Doctor.","clientId":"ID_DE_LA_FICHA","requestId":"NUEVO_POR_INTENTO"}
 ```
 
-Asunto: 1–200 puntos de código, una línea. Mensaje: 1–360, con saltos de línea. NFC/trim y conteo Array.from iguales en ambos lados. Destinatario único hasta 254 caracteres, sin listas ni nombres con formato de cabecera. IDs obligatorios, máximo 100 caracteres. n8n aplica además la lista autorizada; la clave de webhook no sustituye esa comprobación.
+Asunto: 1–200 puntos de código, una línea. Mensaje: 1–360, con saltos de línea. NFC/trim y conteo Array.from iguales en ambos lados. Destinatario único hasta 254 caracteres, sin listas ni nombres con formato de cabecera. IDs obligatorios, máximo 100 caracteres. No se cotejan IDs ni destinatarios contra listas en n8n. La clave Header Auth se comprueba en el Webhook.
 
 Aceptación HTTP **200**:
 

@@ -17,7 +17,7 @@ async function app(factory=new IDBFactory()){
  return {w,el,click,fill,input,confirm,load,snapshot,instances,factory,close,until,block(v){blocked=v;},deny(v){deny=v;}};
 }
 test('Analítica UI: entrada única, revisión sin escritura, persistencia y recarga aislada',async()=>{
- const a=await app();for(const id of ['import-kind','load-demo','export-csv','export-backup','pending-backup','download-report'])assert.equal(a.el(id),null);
+ const a=await app();for(const id of ['import-kind','export-csv','export-backup','pending-backup','download-report'])assert.equal(a.el(id),null);
  await a.input();assert.equal(a.snapshot().revision,0);assert.equal(a.snapshot().kpis.attentions,0);assert.equal(a.el('confirm-import').disabled,false);await a.confirm();assert.equal(a.snapshot().kpis.total,2134679);assert.equal(a.instances.size,5);assert.equal(a.el('records-body').children.length,20);const f=a.factory;a.close();const b=await app(f);assert.equal(b.snapshot().kpis.attentions,150);b.close();
 });
 test('Analítica UI: filtros/gráficos, teclado, detalle y paginación siguen funcionando',async()=>{
@@ -35,4 +35,16 @@ test('Analítica UI: concurrencia conserva candidato e impide sobrescritura',asy
 });
 test('Analítica UI: vaciar con revisión, rechazo/cancelación y recarga del mismo CSV',async()=>{
  const a=await app();await a.load();a.deny(true);a.click('clear-data');assert.equal(a.snapshot().review,false);a.deny(false);a.click('clear-data');assert.equal(a.snapshot().kpis.attentions,150);await a.confirm();assert.equal(a.snapshot().kpis.attentions,0);await a.load();assert.equal(a.snapshot().kpis.attentions,150);const ids=[...a.w.document.querySelectorAll('[id]')].map(n=>n.id);assert.equal(new Set(ids).size,ids.length);a.close();
+});
+
+
+test('Analítica: demostración se revisa antes de guardar, cancela y recarga sin duplicados',async()=>{
+ const a=await app();a.click('load-demo');assert.equal(a.snapshot().revision,0);assert.equal(a.snapshot().kpis.attentions,0);assert.match(a.el('review-summary').textContent,/25 clientes.*45 perritos.*150 atenciones.*200 servicios/);assert.match(a.el('review-issues').textContent,/reemplazará/);
+ a.click('cancel-review');assert.equal(a.snapshot().revision,0);a.click('load-demo');await a.confirm();assert.equal(a.snapshot().kpis.total,2134679);assert.equal(a.el('demo-badge').hidden,false);
+ a.fill('search','no-existe');a.click('load-demo');await a.confirm();assert.equal(a.snapshot().kpis.attentions,150);assert.equal(a.snapshot().filters.search,'');assert.equal(a.snapshot().kpis.services,200);
+ const f=a.factory;a.close();const b=await app(f);assert.equal(b.snapshot().kpis.attentions,150);assert.equal(b.el('demo-badge').hidden,false);b.close();
+});
+
+test('Analítica: fallo de cuota al cargar demostración conserva conjunto y permite reintento',async()=>{
+ const a=await app();await a.load();const revision=a.snapshot().revision;a.click('load-demo');a.block(true);await a.confirm();assert.equal(a.snapshot().revision,revision);assert.equal(a.snapshot().review,true);assert.match(a.el('import-message').textContent,/Cuota/);a.block(false);await a.confirm();assert.equal(a.snapshot().revision,revision+1);assert.equal(a.snapshot().kpis.attentions,150);a.close();
 });

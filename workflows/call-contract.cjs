@@ -1,5 +1,5 @@
 // Funciones puras: se incorporan al JSON de n8n sin dependencias externas.
-function validateInvocation(body, permitted = {}) {
+function validateInvocation(body) {
   const errors = [], fields = ['action','phone','message','clientId','requestId'];
   const data = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   function text(field,max) {
@@ -15,8 +15,6 @@ function validateInvocation(body, permitted = {}) {
   if(typeof data.message!=='string'||Array.from(message).length<1||Array.from(message).length>120)errors.push('El mensaje debe tener entre 1 y 120 caracteres.');
   function rejected(statusCode,status,details){return {action:'invalida',statusCode,response:{ok:false,status,requestId:requestId&&requestId.length<=100?requestId:null,clientId:clientId&&clientId.length<=100?clientId:null,message:'No se pudo procesar la solicitud.',errors:details}};}
   if(errors.length)return rejected(400,'solicitud_invalida',errors);
-  const allowed=Object.hasOwn(permitted,clientId)&&typeof permitted[clientId]==='string'?permitted[clientId].replace(/[\s().-]/g,''):'';
-  if(!allowed||phone!==allowed)return rejected(403,'destino_no_autorizado',['El cliente y teléfono no están en la lista permitida de demostración.']);
   return {action:'llamada',phone,message,clientId,requestId};
 }
 function adaptTwilio(result,invocation) {

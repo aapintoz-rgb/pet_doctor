@@ -9,7 +9,7 @@ Usa el workflow que ya modificaste en n8n y su URL en Pet Doctor. `workflows/pet
 | Nodo | Configuración y función |
 |---|---|
 | Webhook llamadas | POST, path pet-doctor-llamadas-demo, Authentication Header Auth, Respond usando Respond to Webhook |
-| Validar invocación | Valida campos y comprueba el par cliente-teléfono en PERMITTED |
+| Validar invocación | Valida campos y conserva IDs para correlación; sin lista de clientes/destinos |
 | Switch llamada | Salida 0: action igual a llamada; fallback extra: rechazo |
 | Make a call | Twilio Call / Make; From fijo de n8n, To y Message dinámicos; sin TwiML |
 | Adaptar respuesta Twilio | Conserva requestId/clientId del validador y normaliza el resultado |
@@ -25,17 +25,11 @@ Crea una credencial **Header Auth** en n8n:
 
 Selecciona esa credencial en Webhook llamadas. El acceso se comprueba antes de ejecutar el Code. No pegues la clave en el código, JSON, repositorio ni mensajes de error. La credencial contiene el valor secreto; el workflow exportado no lo incluye.
 
-### Lista de destinos
+### Validación compartida sin listas de IDs
 
-Abre Validar invocación y localiza:
+Reemplaza TODO el código de Validar invocación con [validar-invocacion.code.js](../workflows/validar-invocacion.code.js), modo Run Once for All Items, JavaScript. Valida llamadas y correos sin listas de clientId/teléfono/correo. No conserva ni añade código anterior con PERMITTED o CORREOS_PERMITIDOS. Los IDs siguen siendo obligatorios para correlación de respuesta, sin registro previo en n8n. Mantén Header Auth.
 
-```javascript
-const PERMITTED = {};
-```
-
-Añade únicamente pares de IDs reales de cliente y teléfonos internacionales que hayas verificado y autorizado para la demostración. El ID se muestra en la ficha de Pet Doctor. El objeto vacío rechaza todas las solicitudes con 403 antes de Twilio. El número debe coincidir con el registrado en la ficha; no se admiten destinos elegidos libremente en el modal.
-
-No uses nombres de cliente como identificador, no guardes una lista completa de clientes en este flujo y no agregues DNI, correo ni datos de perritos. Los IDs se tratan como identificadores opacos, sin renombrarlos ni normalizarlos.
+Consulta [Webhook compartido](webhook-compartido.md) para los puntos exactos. El JSON de referencia de llamadas se genera sin lista, pero no sustituye tu workflow remoto que también tiene correo y HTTP Request.
 
 ### Twilio
 
@@ -51,11 +45,11 @@ En Make a call selecciona tu credencial Twilio y completa **From** con el númer
 
 El adaptador solo confirma aceptación si recibe SID con formato CA seguido de 32 dígitos hexadecimales y un estado inicial queued, initiated, ringing o in-progress. Los errores o salidas incompletas se convierten en 502/resultado_desconocido sin exponer el error original de Twilio.
 
-Las restricciones y el saldo de la cuenta trial son independientes de la lista local: autorizar un destino en PERMITTED no lo verifica en Twilio. Revisa los números verificados, permisos y condiciones de Voice de tu cuenta antes de confirmar una llamada real.
+Las restricciones y el saldo de la cuenta trial son independientes del validador: quitar la lista local no verifica destinos en Twilio. Revisa los números verificados, permisos y condiciones de Voice de tu cuenta antes de confirmar una llamada real.
 
 ## 2. Configurar Pet Doctor
 
-En **Datos y respaldos → Conexión n8n**, configura la única conexión:
+En **Datos y sincronización → Conexión n8n**, configura la única conexión:
 
 1. URL del webhook modificado: HTTPS, o HTTP solo para localhost.
 2. Clave de llamadas para esta sesión: el valor de la credencial Header Auth.
@@ -113,7 +107,7 @@ Aceptación: HTTP 202.
 
 Pet Doctor comprueba HTTP, estado, correlación, Call SID y estado inicial antes de mostrar Llamada iniciada. No afirma que fue contestada ni que el mensaje se escuchó.
 
-Errores de datos: HTTP 400/status solicitud_invalida; par no autorizado: HTTP 403/status destino_no_autorizado. El cuerpo contiene ok false, requestId, clientId, message y errors. Header Auth puede rechazar antes de entrar al flujo con 401/403 sin el cuerpo de aplicación.
+Errores de datos: HTTP 400/status solicitud_invalida. Ya no se genera destino_no_autorizado por listas de clientes. El cuerpo contiene ok false, requestId, clientId, message y errors. Header Auth puede rechazar antes de entrar al flujo con 401/403 sin el cuerpo de aplicación.
 
 Error o salida no confirmable de Twilio: HTTP 502/status resultado_desconocido. Una desconexión, timeout o respuesta mal formada también producen: **Resultado desconocido: comprueba los registros de Twilio antes de intentar otra llamada**. La llamada puede haberse iniciado aunque no llegara la respuesta; interrumpir la espera no cancela una llamada.
 
@@ -126,7 +120,7 @@ No se persisten mensajes, resultados, IDs de llamadas ni un historial de comunic
 - `workflows/call-contract.cjs`: funciones puras de validación y adaptación.
 - `workflows/build-calls.cjs`: genera el workflow; comando `node workflows/build-calls.cjs` desde la raíz.
 - `workflows/pet-doctor-llamadas-demo.json`: archivo importable, desactivado y sin configuración sensible.
-- `tests/calls.test.cjs`: límites, contrato, lista permitida, autenticación representada en el JSON, errores y transporte simulado; ejecuta también los Code nodes del JSON dentro de un contexto aislado.
+- `tests/calls.test.cjs`: límites, contrato, IDs nuevos sin lista, autenticación representada en el JSON, errores y transporte simulado; ejecuta también los Code nodes del JSON dentro de un contexto aislado.
 
 Las pruebas automatizadas no sustituyen importar el JSON en tu versión de n8n y verificar Header Auth, preflight y una llamada autorizada. Esa comprobación real permanece pendiente; esta entrega no inició llamadas ni activó flujos remotos.
 

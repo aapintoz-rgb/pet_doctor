@@ -1,5 +1,20 @@
 # Estado de Pet Doctor
 
+## Publicación autorizada — 11/11/2026
+
+El usuario solicita subir y publicar la última versión con demostración guiada en operativo y Analítica. Se conservan main y Pages desde raíz, con /analitica/. Incluye también los scripts locales pendientes de validación sin listas de IDs; publicar esos archivos no modifica el workflow de n8n. Las notas de entrega local siguientes son antecedentes. Verificar Actions para el commit exacto y los botones nuevos servidos por HTTPS antes de declarar terminada la publicación.
+
+
+## Primer uso con demostración integrada — 11/11/2026, LOCAL
+
+A petición del usuario se recupera la demostración como opción visible sin archivos. Clientes vacío ofrece acceso a Datos y sincronización; «Cargar datos de prueba» prepara 25 clientes, 45 perros, 150 atenciones y 200 servicios con los generadores v3 existentes. Confirmación explícita informa reemplazo de base/cotización y total S/ 21.346,79. Cancelar conserva el trabajo; fallos usan recuperación centralizada; repetir reemplaza sin duplicar. Analítica ofrece su demostración independiente mediante la revisión y transacción existentes, etiqueta ficticia y restablecimiento de filtros al confirmar. Sin nuevas operaciones de archivos ni llamadas/correos automáticos. Esta decisión sustituye la retirada de demostración descrita en notas de octubre. Paquete local actualizado, sin publicación remota. Verificación: 195 pruebas aprobadas; Chrome con cancelación, carga/repetición, fichas e historial, exportación, persistencia analítica y revisión visual a 360/768/1440 px. Ninguna petición externa durante el recorrido.
+
+
+## Webhook compartido sin listas de IDs — 31/10/2026, LOCAL
+
+Por petición del usuario se retiran las listas clientId→teléfono/correo en los contratos y scripts generados. Nuevo workflows/validar-invocacion.code.js reemplaza el nodo compartido completo para ambas acciones. Conserva Header Auth en Webhook, IDs obligatorios para correlación, límites, campos admitidos y respuestas; adaptadores y proveedores sin cambios. Guía docs/webhook-compartido.md sustituye las instrucciones antiguas de listas. Las restricciones de Twilio/Gmail siguen aplicando. Verificación: 190 pruebas aprobadas, incluidas 20 de comunicaciones; sin comunicaciones reales ni modificación de n8n remoto. No publicado en esta intervención.
+
+
 ## Publicación autorizada — 31/10/2026
 
 El usuario solicita subir las copias locales y publicar. Esta entrega reúne registro v3, snapshots y edad estimada, tres plantillas de correo y reorganización de archivos con CSV analítico único. Se mantiene main y Pages desde raíz, conservando /analitica/. Sin cambios remotos a n8n ni envío de comunicaciones. Las notas de entrega local siguientes son antecedentes; antes de declarar la publicación terminada se comprobará el build correspondiente al commit y los recursos servidos por HTTPS.

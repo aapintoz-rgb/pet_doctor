@@ -85,7 +85,7 @@
     if(busy||!review?.prepared.canImport||review.baseRevision!==revision||external)return;
     busy=true;renderReview();$('close-import').disabled=true;$('cancel-review').disabled=true;$('import-file').disabled=true;
     try{
-      const saved=await store.commit(review.prepared.candidate,review.baseRevision);const removed=applyLoaded(saved);review=null;renderReview();notice('Datos guardados en Analítica.'+(removed?' Se retiraron filtros cuyos valores ya no existen.':''));notice('',false,'import-message');channel?.postMessage({revision});busy=false;closeDialog('import-dialog');
+      const saved=await store.commit(review.prepared.candidate,review.baseRevision);if(review.prepared.candidate.meta.demo)filters=D.initialFilters();const removed=applyLoaded(saved);review=null;renderReview();notice('Datos guardados en Analítica.'+(removed?' Se retiraron filtros cuyos valores ya no existen.':''));notice('',false,'import-message');channel?.postMessage({revision});busy=false;closeDialog('import-dialog');
     }catch(e){notice(e.message,true,'import-message');$('confirm-import').textContent='Reintentar guardado';await checkExternal();}
     finally{busy=false;$('close-import').disabled=false;$('cancel-review').disabled=false;$('import-file').disabled=false;renderReview();}
   }
@@ -112,6 +112,14 @@
     }catch(e){if(token===fileToken&&!controller.signal.aborted)notice(e.message,true,'import-message');}
     finally{if(token===fileToken){$('import-progress').hidden=true;$('cancel-read').hidden=true;}}
   };
+  $('load-demo').onclick=()=>{
+    if(busy)return;
+    if(review&&!g.confirm('Hay una carga en revisión. ¿Descartarla y preparar los datos de ejemplo?'))return;
+    fileToken++;readController?.abort();$('import-progress').hidden=true;$('cancel-read').hidden=true;$('import-file').value='';
+    const prepared=D.prepare(data,'demo',null,'Datos de ejemplo');
+    prepared.warnings=[...(prepared.warnings||[]),{line:0,column:'demostración',message:'Datos ficticios. Confirmar reemplazará todo el conjunto de Analítica; cancela para conservar el actual. No modifica clientes ni atenciones del operativo.'}];
+    review={prepared,baseRevision:revision,name:'Datos ficticios de prueba'};$('confirm-import').textContent='Confirmar carga';notice('',false,'import-message');showDialog('import-dialog');renderReview();$('review-title').focus();
+  };
   $('cancel-read').onclick=()=>{fileToken++;readController?.abort();$('import-progress').hidden=true;$('cancel-read').hidden=true;notice('Lectura cancelada. El conjunto anterior se conserva.',false,'import-message');};
   $('cancel-review').onclick=()=>{if(busy)return;review=null;fileToken++;$('import-file').value='';$('confirm-import').textContent='Confirmar carga';renderReview();notice('',false,'import-message');$('import-file').focus();};
   $('confirm-import').onclick=saveReview;
@@ -119,8 +127,8 @@
   $('refresh-data').onclick=async()=>{if(busy)return;if(review&&!g.confirm('Hay un candidato pendiente. Conserva el CSV original. ¿Descartarlo y actualizar Analítica?'))return;try{const record=await store.load();review=null;renderReview();const removed=applyLoaded(record);notice('Analítica actualizada.'+(removed?' Se retiraron filtros no disponibles.':''));}catch(e){notice(e.message,true);}};
   if(channel)channel.onmessage=checkExternal;g.addEventListener('focus',checkExternal);
   g.addEventListener('beforeunload',e=>{if(review?.prepared.canImport){e.preventDefault();e.returnValue='';}});
-  for(const id of ['open-import','clear-data'])$(id).disabled=true;
-  const ready=store.load().then(record=>{applyLoaded(record);}).catch(e=>{render();notice(e.message,true);}).finally(()=>{for(const id of ['open-import','clear-data'])$(id).disabled=false;});
+  for(const id of ['open-import','clear-data','load-demo'])$(id).disabled=true;
+  const ready=store.load().then(record=>{applyLoaded(record);}).catch(e=>{render();notice(e.message,true);}).finally(()=>{for(const id of ['open-import','clear-data','load-demo'])$(id).disabled=false;});
   // Read-only inspection hook for automated checks; all persistence uses the same UI transaction.
   g.PetDoctorAnalyticsApp={ready,snapshot:()=>({revision,filters:structuredClone(filters),page,kpis:result?.kpis,review:!!review,busy}),destroy(){charts.destroy();channel?.close();store.close();g.removeEventListener('focus',checkExternal);}};
 })(globalThis);

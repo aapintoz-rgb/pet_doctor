@@ -35,12 +35,14 @@ test('Solicitud mínima de correo: registro, identificadores y una sola direcci�
     assert.throws(()=>I.validateEmailPayload({...p,...change}));assert.equal(validate({...p,...change},allow).statusCode,400);
   }
 });
-test('n8n rechaza por defecto y solo admite el par cliente-correo; sin herencia de propiedades',()=>{
-  const p=prepare();assert.equal(validate(p).statusCode,403);assert.equal(validate(p,{'other':owner.email}).statusCode,403);
-  assert.equal(validate(p,{'owner-1':'other@example.com'}).statusCode,403);assert.equal(validate(p,allow).action,'correo');
-  assert.equal(validate({...p,clientId:'__proto__'},allow).statusCode,403);
-  assert.equal(validate({...p,email:' ana@example.com '},{'owner-1':' ana@example.com '}).email,owner.email);
+test('n8n admite IDs y correos válidos de otros navegadores sin lista',()=>{
+  const p=prepare();
+  for(const clientId of ['owner-1','otro-navegador-123','__proto__']) {
+    const result=validate({...p,clientId,email:' otra@example.com '});
+    assert.equal(result.action,'correo');assert.equal(result.clientId,clientId);assert.equal(result.email,'otra@example.com');
+  }
 });
+
 test('Adaptador Gmail exige ID y no filtra errores originales ni tokens',()=>{
   const p=prepare(),good=adaptGmail({id:'gmail-id',threadId:'thread'},p);
   assert.equal(good.statusCode,200);assert.deepEqual(good.response,response(p,{messageId:'gmail-id',message:'Gmail aceptó el envío del correo.'}));
@@ -72,9 +74,10 @@ test('Snippet n8n ejecutable conserva el código original para llamadas y rechaz
   const old="return [{json:{action:'llamada',marker:'codigo-original',input:$input.first().json.body}}];";
   const run=p=>new Function('$input',snippet+old)({first:()=>({json:{body:p}})});
   const call={action:'llamada',phone:owner.contact};assert.equal(run(call)[0].json.marker,'codigo-original');assert.deepEqual(run(call)[0].json.input,call);
-  assert.equal(run(prepare())[0].json.statusCode,403);
+  assert.equal(run(prepare())[0].json.action,'correo');
   for(const action of [' CORREO ','Correo','CORREO'])assert.equal(run({...prepare(),action})[0].json.statusCode,400);
-  const configured=snippet.replace('const CORREOS_PERMITIDOS = {};','const CORREOS_PERMITIDOS = '+JSON.stringify(allow)+';');
+  assert.ok(!snippet.includes('CORREOS_PERMITIDOS'));
+  const configured=snippet;
   const result=new Function('$input',configured+old)({first:()=>({json:{body:prepare()}})});assert.equal(result[0].json.action,'correo');
   const adapter=fs.readFileSync(path.join(__dirname,'../workflows/adaptar-gmail.code.js'),'utf8'),p=prepare();
   const adapted=new Function('$input','$',adapter)({first:()=>({json:{id:'gmail-id'}})},()=>({first:()=>({json:p})}));assert.equal(adapted[0].json.response.requestId,p.requestId);

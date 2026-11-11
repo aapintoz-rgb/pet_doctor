@@ -27,13 +27,13 @@ test('Solicitud mínima usa el registro, no un teléfono alternativo ni campos e
   for(const extra of [{from:'+1234567890'},{twiml:'<Dial>bad</Dial>'},{email:'x'}]){assert.throws(()=>I.validateCallPayload({...payload,...extra}));assert.equal(validateInvocation({...payload,...extra},{'client-1':payload.phone}).statusCode,400);}
 });
 
-test('n8n rechaza campos inválidos y lista vacía; solo autoriza el par cliente-teléfono exacto',()=>{
-  const payload=prepare('Hola');assert.equal(validateInvocation(payload).statusCode,403);
-  assert.equal(validateInvocation(payload,{'other-client':payload.phone}).statusCode,403);
-  assert.equal(validateInvocation(payload,{'client-1':'+51999888777'}).statusCode,403);
-  assert.equal(validateInvocation(payload,{'client-1':payload.phone}).phone,payload.phone);
-  for(const changed of [{action:'correo'},{action:'prueba_llamada'},{message:1},{clientId:''},{requestId:[]},{phone:'999123456'}])assert.equal(validateInvocation({...payload,...changed},{'client-1':payload.phone}).statusCode,400);
-  assert.equal(validateInvocation({...payload,clientId:'__proto__'}).statusCode,403);
+test('n8n admite IDs de otros navegadores y destinos válidos sin lista; rechaza datos inválidos',()=>{
+  const payload=prepare('Hola');
+  for(const clientId of ['client-1','otro-navegador-123','__proto__']) {
+    const result=validateInvocation({...payload,clientId,phone:'+34911234567'});
+    assert.equal(result.action,'llamada');assert.equal(result.clientId,clientId);assert.equal(result.phone,'+34911234567');
+  }
+  for(const changed of [{action:'correo'},{action:'prueba_llamada'},{message:1},{clientId:''},{requestId:[]},{phone:'999123456'}])assert.equal(validateInvocation({...payload,...changed}).statusCode,400);
 });
 
 test('Única conexión conserva URL y excluye clave y datos de negocio',()=>{
@@ -80,8 +80,8 @@ test('JSON importable conserva autenticación, rutas de error, parámetros diná
   assert.equal(workflow.connections['Switch llamada'].main[1][0].node,'Preparar error');
   const code=node('Validar invocación').parameters.jsCode;
   const execute=(source,data,extra={})=>vm.runInNewContext('(function(){'+source+'})()',{ $input:{first:()=>({json:data})},...extra});
-  const payload=prepare('Hola'),rejected=execute(code,{body:payload})[0].json;assert.equal(rejected.statusCode,403);
-  const authorized=execute(code.replace('const PERMITTED = {};','const PERMITTED = '+JSON.stringify({'client-1':payload.phone})+';'),{body:payload})[0].json;assert.equal(authorized.action,'llamada');
-  const error=execute(node('Preparar error').parameters.jsCode,rejected)[0].json;assert.equal(error.statusCode,403);
+  const payload=prepare('Hola'),rejected=execute(code,{body:{...payload,phone:'bad'}})[0].json;assert.equal(rejected.statusCode,400);
+  const authorized=execute(code,{body:payload})[0].json;assert.equal(authorized.action,'llamada');assert.ok(!code.includes('PERMITTED'));
+  const error=execute(node('Preparar error').parameters.jsCode,rejected)[0].json;assert.equal(error.statusCode,400);
   const accepted=execute(node('Adaptar respuesta Twilio').parameters.jsCode,{sid,status:'queued'},{$:()=>({first:()=>({json:authorized})})})[0].json;assert.equal(accepted.statusCode,202);assert.equal(accepted.response.requestId,payload.requestId);
 });

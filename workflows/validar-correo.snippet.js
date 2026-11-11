@@ -1,6 +1,6 @@
 // AÑADIR AL PRINCIPIO de «Validar invocación», sin borrar el código actual.
 {
-function validateEmailInvocation(body, permitted = {}) {
+function validateEmailInvocation(body) {
   const data = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
   const fields = ['action','email','subject','message','clientId','requestId'];
   const errors = [];
@@ -23,16 +23,12 @@ function validateEmailInvocation(body, permitted = {}) {
     return {action:'invalida',statusCode,response:{ok:false,status,requestId:requestId&&requestId.length<=100?requestId:null,clientId:clientId&&clientId.length<=100?clientId:null,message:'No se ejecutó Gmail.',errors:details}};
   }
   if (errors.length) return reject(400,'solicitud_invalida',errors);
-  const allowed=Object.hasOwn(permitted,clientId)&&typeof permitted[clientId]==='string'?permitted[clientId].trim():'';
-  if (!allowed || allowed!==email) return reject(403,'destino_no_autorizado',['El cliente y correo no están autorizados en n8n.']);
   return {action:'correo',email,subject,message,clientId,requestId};
 }
 
-// Configuración exclusiva de n8n: clientId -> correo autorizado.
-const CORREOS_PERMITIDOS = {};
 const entradaCorreo = $input.first().json.body;
 if (typeof entradaCorreo?.action === 'string' && entradaCorreo.action.trim().toLowerCase() === 'correo') {
-  return [{json:validateEmailInvocation(entradaCorreo, CORREOS_PERMITIDOS)}];
+  return [{json:validateEmailInvocation(entradaCorreo)}];
 }
 }
 // Debajo continúa TODO el código actual de llamada y validación general.
